@@ -78,9 +78,10 @@ func (d *Dispatcher) Dispatch(nodes []*api.Node) int {
 
 		assignedWorkerCount++
 	}
-	if assignedNodesCount < len(nodes)-1 {
+	if assignedNodesCount < len(nodes) {
 		currNodes := nodes[assignedNodesCount:]
-		currTask := task.NewTask().WithNodes(currNodes)
+		currPods := d.config.clusterInfoScraper.GetRunningPodsOnNodes(currNodes)
+		currTask := task.NewTask().WithNodes(currNodes).WithPods(currPods)
 		d.assignTask(currTask)
 
 		assignedWorkerCount++
