@@ -48,8 +48,10 @@ func (d *Dispatcher) Init(c *ResultCollector) {
 		for _, mc := range d.config.probeConfig.MonitoringConfigs {
 			workerConfig.WithMonitoringWorkerConfig(mc)
 		}
+
 		// create workers
-		discoveryWorker, err := NewK8sDiscoveryWorker(workerConfig)
+		wid := fmt.Sprintf("w%d", i)
+		discoveryWorker, err := NewK8sDiscoveryWorker(workerConfig, wid)
 		if err != nil {
 			fmt.Errorf("failed to build discovery worker %s", err)
 		}
