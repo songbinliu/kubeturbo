@@ -122,6 +122,27 @@ func (dc *K8sDiscoveryClient) Discover(accountValues []*proto.AccountValue) (*pr
 	return discoveryResponse, nil
 }
 
+func printNodeEntity(dtos []*proto.EntityDTO) {
+	i := 0
+
+	for _, dto := range dtos {
+		if dto.GetEntityType() == proto.EntityDTO_VIRTUAL_MACHINE {
+			for _, c := range dto.GetCommoditiesSold() {
+				if c.GetCommodityType() == proto.CommodityDTO_VMPM_ACCESS {
+					if c.GetCapacity() > 0 {
+						glog.V(2).Infof("node[%v] %++v", dto.GetDisplayName(), dto)
+						i ++
+						break
+					}
+				}
+			}
+		}
+		if i > 10 {
+			break
+		}
+	}
+}
+
 func (dc *K8sDiscoveryClient) discoverWithNewFramework() ([]*proto.EntityDTO, error) {
 	nodes, err := dc.config.k8sClusterScraper.GetAllNodes()
 	if err != nil {
@@ -149,6 +170,8 @@ func (dc *K8sDiscoveryClient) discoverWithNewFramework() ([]*proto.EntityDTO, er
 	} else {
 		entityDTOs = append(entityDTOs, svcDiscResult.Content()...)
 	}
+
+	printNodeEntity(entityDTOs)
 
 	return entityDTOs, nil
 }
