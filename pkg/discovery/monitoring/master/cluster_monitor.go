@@ -76,8 +76,11 @@ func (m *ClusterMonitor) RetrieveClusterStat() error {
 	default:
 		err := m.findClusterID()
 		if err != nil {
-			return fmt.Errorf("Failed to find cluster ID based on Kubernetes service: %v", err)
+			err = fmt.Errorf("Failed to find cluster ID based on Kubernetes service: %v", err)
+			glog.Error(err.Error())
+			return err
 		}
+
 		select {
 		case <-m.stopCh:
 			return nil
@@ -100,8 +103,11 @@ func (m *ClusterMonitor) reset() {
 func (m *ClusterMonitor) findClusterID() error {
 	kubernetesSvcID, err := m.config.clusterInfoScraper.GetKubernetesServiceID()
 	if err != nil {
+		glog.Errorf("OUTOF Cluster: failed to get clusterID: %v", err)
 		return err
 	}
+	glog.V(1).Infof("clusterID %v", kubernetesSvcID)
+
 	// TODO use a constant for cluster commodity key.
 	clusterInfo := metrics.NewEntityStateMetric(task.ClusterType, "", metrics.Cluster, kubernetesSvcID)
 	m.sink.AddNewMetricEntries(clusterInfo)

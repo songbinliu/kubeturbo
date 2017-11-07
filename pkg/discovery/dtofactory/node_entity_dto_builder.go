@@ -159,11 +159,11 @@ func (builder *nodeEntityDTOBuilder) getNodeCommoditiesSold(node *api.Node) ([]*
 	clusterMetricUID := metrics.GenerateEntityStateMetricUID(task.ClusterType, "", metrics.Cluster)
 	clusterInfo, err := builder.metricsSink.GetMetric(clusterMetricUID)
 	if err != nil {
-		glog.Errorf("Failed to get %s used for current Kubernetes Cluster%s", metrics.Cluster)
+		glog.Errorf("OUTOF Cluster -- Failed to get %s used for current Kubernetes Cluster%s", metrics.Cluster)
 	} else {
 		clusterCommodityKey, ok := clusterInfo.GetValue().(string)
 		if !ok {
-			glog.Error("Failed to get cluster ID")
+			glog.Error("OUTOF Cluster -- Failed to get cluster ID")
 		}
 		clusterComm, err := sdkbuilder.NewCommodityDTOBuilder(proto.CommodityDTO_CLUSTER).
 			Key(clusterCommodityKey).

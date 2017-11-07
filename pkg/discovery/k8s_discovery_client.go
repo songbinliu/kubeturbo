@@ -122,6 +122,47 @@ func (dc *K8sDiscoveryClient) Discover(accountValues []*proto.AccountValue) (*pr
 	return discoveryResponse, nil
 }
 
+func checkPodCluster(dtos []*proto.EntityDTO) {
+	podNum := 0
+	badNum := 0
+	for _, dto := range dtos {
+		if dto.GetEntityType() != proto.EntityDTO_CONTAINER_POD {
+			continue
+		}
+		podNum ++
+
+		flag := false
+		for _, bought := range dto.CommoditiesBought {
+			for _, comm := range bought.GetBought() {
+				if podNum < 3 {
+					glog.V(1).Infof("commodity type: %v", comm.GetCommodityType())
+				}
+
+				if comm.GetCommodityType() != proto.CommodityDTO_CLUSTER {
+					continue
+				}
+
+				key := comm.GetKey()
+				if len(key) < 2 {
+					glog.Errorf("OUTOF Cluster error: key(%s) is empty", key)
+				}
+				flag = true
+			}
+		}
+
+		if !flag {
+			badNum ++
+			if(badNum < 5) {
+				glog.Errorf("OUTOF Cluster: pod: %s, dto: %+++v", dto.GetDisplayName(), dto)
+			} else {
+				glog.Errorf("OUTOF Cluster: pod: %s", dto.GetDisplayName())
+			}
+		}
+	}
+
+	glog.Errorf("OUTOF Cluster: podnum %d/%d", badNum, podNum)
+}
+
 func (dc *K8sDiscoveryClient) discoverWithNewFramework() ([]*proto.EntityDTO, error) {
 	nodes, err := dc.config.k8sClusterScraper.GetAllNodes()
 	if err != nil {
@@ -152,6 +193,7 @@ func (dc *K8sDiscoveryClient) discoverWithNewFramework() ([]*proto.EntityDTO, er
 		entityDTOs = append(entityDTOs, svcDiscResult.Content()...)
 	}
 
+	checkPodCluster(entityDTOs)
 	glog.V(2).Infof("There are %d entityDTOs.", len(entityDTOs))
 
 	return entityDTOs, nil
