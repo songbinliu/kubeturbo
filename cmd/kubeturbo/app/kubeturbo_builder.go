@@ -16,7 +16,7 @@ import (
 	restclient "k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/tools/record"
-	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
+	//_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 
 	kubeturbo "github.com/turbonomic/kubeturbo/pkg"
 	"github.com/turbonomic/kubeturbo/pkg/action/executor"

@@ -125,7 +125,9 @@ func (dc *K8sDiscoveryClient) Discover(accountValues []*proto.AccountValue) (*pr
 func (dc *K8sDiscoveryClient) discoverWithNewFramework() ([]*proto.EntityDTO, error) {
 	nodes, err := dc.config.k8sClusterScraper.GetAllNodes()
 	if err != nil {
-		return nil, fmt.Errorf("Failed to get all nodes in the cluster: %s", err)
+		err := fmt.Errorf("Failed to get all nodes in the cluster: %s", err)
+		glog.Error(err.Error())
+		return nil, fmt.Errorf("Failed to get all the nodes in cluster.")
 	}
 
 	workerCount := dc.dispatcher.Dispatch(nodes)
