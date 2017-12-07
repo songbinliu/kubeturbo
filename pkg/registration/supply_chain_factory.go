@@ -15,6 +15,7 @@ var (
 	cpuProvisionedType proto.CommodityDTO_CommodityType = proto.CommodityDTO_CPU_PROVISIONED
 	memProvisionedType proto.CommodityDTO_CommodityType = proto.CommodityDTO_MEM_PROVISIONED
 	transactionType    proto.CommodityDTO_CommodityType = proto.CommodityDTO_TRANSACTION
+	latencyType        proto.CommodityDTO_CommodityType = proto.CommodityDTO_RESPONSE_TIME
 
 	clusterType    proto.CommodityDTO_CommodityType = proto.CommodityDTO_CLUSTER
 	appCommType    proto.CommodityDTO_CommodityType = proto.CommodityDTO_APPLICATION
@@ -30,6 +31,7 @@ var (
 	clusterTemplateComm        *proto.TemplateCommodity = &proto.TemplateCommodity{Key: &fakeKey, CommodityType: &clusterType}
 	transactionTemplateComm    *proto.TemplateCommodity = &proto.TemplateCommodity{Key: &fakeKey, CommodityType: &transactionType}
 	vmpmAccessTemplateComm     *proto.TemplateCommodity = &proto.TemplateCommodity{Key: &fakeKey, CommodityType: &vmPMAccessType}
+	latencyTemplateComm        *proto.TemplateCommodity = &proto.TemplateCommodity{Key: &fakeKey, CommodityType: &latencyType}
 )
 
 type SupplyChainFactory struct {
@@ -159,7 +161,8 @@ func (f *SupplyChainFactory) buildApplicationSupplyBuilder() (*proto.TemplateDTO
 	// Application supply chain builder
 	appSupplyChainNodeBuilder := supplychain.NewSupplyChainNodeBuilder(proto.EntityDTO_APPLICATION)
 	appSupplyChainNodeBuilder = appSupplyChainNodeBuilder.
-		Sells(transactionTemplateComm).
+		Sells(transactionTemplateComm).    // capacity=set, used=observed
+		Sells(latencyTemplateComm).
 		Provider(proto.EntityDTO_CONTAINER, proto.Provider_HOSTING).
 		Buys(vCpuTemplateComm).
 		Buys(vMemTemplateComm).
@@ -171,7 +174,10 @@ func (f *SupplyChainFactory) buildApplicationSupplyBuilder() (*proto.TemplateDTO
 func (f *SupplyChainFactory) buildVirtualApplicationSupplyBuilder() (*proto.TemplateDTO, error) {
 	vAppSupplyChainNodeBuilder := supplychain.NewSupplyChainNodeBuilder(proto.EntityDTO_VIRTUAL_APPLICATION)
 	vAppSupplyChainNodeBuilder = vAppSupplyChainNodeBuilder.
+	    Sells(transactionTemplateComm). // Capacity=set, used=observed
+		Sells(latencyTemplateComm).
 		Provider(proto.EntityDTO_APPLICATION, proto.Provider_LAYERED_OVER).
-		Buys(transactionTemplateComm)
+		Buys(transactionTemplateComm).   // used=provider.used
+	    Buys(latencyTemplateComm)
 	return vAppSupplyChainNodeBuilder.Create()
 }
