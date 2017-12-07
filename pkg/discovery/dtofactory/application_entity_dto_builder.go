@@ -2,6 +2,7 @@ package dtofactory
 
 import (
 	"fmt"
+	"github.com/golang/glog"
 
 	api "k8s.io/client-go/pkg/api/v1"
 
@@ -12,8 +13,6 @@ import (
 
 	sdkbuilder "github.com/turbonomic/turbo-go-sdk/pkg/builder"
 	"github.com/turbonomic/turbo-go-sdk/pkg/proto"
-
-	"github.com/golang/glog"
 )
 
 const (
@@ -33,6 +32,7 @@ var (
 
 type applicationEntityDTOBuilder struct {
 	generalBuilder
+	vcluster *metrics.VirtualCluster
 }
 
 func NewApplicationEntityDTOBuilder(sink *metrics.EntityMetricSink) *applicationEntityDTOBuilder {
@@ -56,6 +56,60 @@ func (builder *applicationEntityDTOBuilder) getNodeCPUFrequency(pod *api.Pod) (f
 	return cpuFrequency, nil
 }
 
+func (builder *applicationEntityDTOBuilder) InjectAppMetrics(pod *api.Pod) error {
+	//1. find the service
+	fullName := util.PodKeyFunc(pod)
+	vpod, exist := builder.vcluster.Pods[fullName];
+	if !exist {
+		err := fmt.Errorf("Cannot find pod[%v] from vcluster.")
+		glog.Errorf(err.Error())
+		return err
+	}
+
+	if vpod.Service == nil {
+		glog.V(3).Infof("pod[%v] is not assoicated with a service.", fullName)
+		return nil
+	}
+
+	//2. find the container by port
+	ports := vpod.Service.Ports
+
+	found := false
+	idx := - 1
+	containers := pod.Spec.Containers
+	for i := range containers {
+		container := &containers[i]
+
+		for _, port := range container.Ports {
+			rport := int(port.ContainerPort)
+			if _, exist := ports[rport]; exist {
+				found = true
+				break
+			}
+		}
+
+		if found {
+			idx = i
+			break
+		}
+	}
+
+	if !found {
+		glog.Errorf("Cannot determine Pod[%s] container providing service for service[%++v]", fullName, vpod.Service)
+		idx = 0
+		return nil
+	}
+
+	//3. inject the metrics
+	// TODO: continue
+	podId := string(pod.UID)
+	containerId := util.ContainerIdFunc(podId, idx)
+	appId := util.ApplicationIdFunc(containerId)
+
+
+	return nil
+}
+
 func (builder *applicationEntityDTOBuilder) BuildEntityDTOs(pods []*api.Pod) ([]*proto.EntityDTO, error) {
 	var result []*proto.EntityDTO
 
@@ -66,6 +120,7 @@ func (builder *applicationEntityDTOBuilder) BuildEntityDTOs(pods []*api.Pod) ([]
 			glog.Errorf("failed to build ContainerDTOs for pod[%s]: %v", podFullName, err)
 			continue
 		}
+
 		podId := string(pod.UID)
 		for i := range pod.Spec.Containers {
 			//1. Id and Name

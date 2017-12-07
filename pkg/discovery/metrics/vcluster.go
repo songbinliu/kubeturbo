@@ -59,7 +59,10 @@ type Pod struct {
 	Latency Resource
 
 	Detail *api.Pod
-	Services []*VirtualApp
+
+	//TODO: There will be error if the Pod is associated with multiple services.
+	// This is because the transactions monitored by Service does not know who is the provider.
+	Service *VirtualApp
 }
 
 type VirtualApp struct {
@@ -69,7 +72,10 @@ type VirtualApp struct {
 	Transaction Resource
 	Latency     Resource
 
-	Pods []*Pod
+	// indexed by Pod.FullName
+	Pods map[string]*Pod
+
+	// indexed by Port number
 	Ports map[int]struct{}
 }
 
@@ -150,9 +156,20 @@ func (vc *VirtualCluster) ConnectPodVapp(podName string, vapp *VirtualApp) error
 		return err
 	}
 
-	// TODO: use map to avoid add the same object multiple times
-	pod.Services = append(pod.Services, vapp)
-	vapp.Pods = append(vapp.Pods, pod)
+	// TODO: This will be problem when the pod is associated with multiple services.
+	if pod.Service != nil {
+		glog.Errorf("Potential bug: pod[%v] is associated with multiple services.", pod.FullName)
+
+		if len(pod.Service.Pods) == 1 {
+			glog.Errorf("Won't associate pod[%v] to service[%v]", pod.FullName, pod.Service.FullName)
+			return
+		} else {
+			pod.Service.DeletePod(pod)
+		}
+	}
+
+	pod.Service = vapp
+	vapp.AddPod(pod)
 	return nil
 }
 
@@ -326,6 +343,7 @@ func NewVirtualApp(svc *api.Service) *VirtualApp {
 		ObjectMeta.Kind: "service",
 		FullName: genFullName(svc.Namespace, svc.Name),
 		Ports: ports,
+		Pods: make(map[string]*Pod),
 	}
 }
 
@@ -346,6 +364,14 @@ func (vapp *VirtualApp) SetCapacity() {
 	vapp.Transaction.Capacity = totalTrans
 	vapp.Latency.Capacity = totalLatency
 	return
+}
+
+func (vapp *VirtualApp) AddPod(pod *Pod) {
+	vapp.Pods[pod.FullName] = pod
+}
+
+func (vapp *VirtualApp) DeletePod(pod *Pod) {
+	delete(vapp.Pods, pod.FullName)
 }
 
 func genFullName(namespace, name string) string {
