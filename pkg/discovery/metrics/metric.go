@@ -10,7 +10,7 @@ const (
 	CPUProvisioned    ResourceType = "CPUProvisioned"
 	MemoryProvisioned ResourceType = "MemoryProvisioned"
 	Transaction       ResourceType = "Transaction"
-	Latency       ResourceType = "Latency"
+	Latency           ResourceType = "Latency"
 
 	Access       ResourceType = "Access"
 	Cluster      ResourceType = "Cluster"

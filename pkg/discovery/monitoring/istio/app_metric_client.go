@@ -1,20 +1,20 @@
 package istio
 
 import (
-	"time"
-	"net/url"
 	"crypto/tls"
-	"net/http"
-	"github.com/golang/glog"
-	"fmt"
-	"sync"
-	"io/ioutil"
 	"encoding/json"
+	"fmt"
+	"github.com/golang/glog"
+	"io/ioutil"
+	"net/http"
+	"net/url"
+	"sync"
+	"time"
 )
 
 const (
-	defaultTimeOut =  time.Duration(60 * time.Second)
-	API_PATH_POD = "/pod/metrics"
+	defaultTimeOut   = time.Duration(60 * time.Second)
+	API_PATH_POD     = "/pod/metrics"
 	API_PATH_SERVICE = "/service/metrics"
 )
 
@@ -51,7 +51,6 @@ func NewMetricClient(conf *AppMetricClientConfig) (*AppMetricClient, error) {
 
 	return app, nil
 }
-
 
 func (c *AppMetricClient) GetMetrics(path string) (MetricSet, error) {
 	p := fmt.Sprintf("%v%v", c.config.Host, path)

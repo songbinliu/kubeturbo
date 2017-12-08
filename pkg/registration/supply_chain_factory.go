@@ -161,7 +161,7 @@ func (f *SupplyChainFactory) buildApplicationSupplyBuilder() (*proto.TemplateDTO
 	// Application supply chain builder
 	appSupplyChainNodeBuilder := supplychain.NewSupplyChainNodeBuilder(proto.EntityDTO_APPLICATION)
 	appSupplyChainNodeBuilder = appSupplyChainNodeBuilder.
-		Sells(transactionTemplateComm).    // capacity=set, used=observed
+		Sells(transactionTemplateComm). // capacity=set, used=observed
 		Sells(latencyTemplateComm).
 		Provider(proto.EntityDTO_CONTAINER, proto.Provider_HOSTING).
 		Buys(vCpuTemplateComm).
@@ -174,10 +174,10 @@ func (f *SupplyChainFactory) buildApplicationSupplyBuilder() (*proto.TemplateDTO
 func (f *SupplyChainFactory) buildVirtualApplicationSupplyBuilder() (*proto.TemplateDTO, error) {
 	vAppSupplyChainNodeBuilder := supplychain.NewSupplyChainNodeBuilder(proto.EntityDTO_VIRTUAL_APPLICATION)
 	vAppSupplyChainNodeBuilder = vAppSupplyChainNodeBuilder.
-	    Sells(transactionTemplateComm). // Capacity=set, used=observed
+		Sells(transactionTemplateComm). // Capacity=set, used=observed
 		Sells(latencyTemplateComm).
 		Provider(proto.EntityDTO_APPLICATION, proto.Provider_LAYERED_OVER).
-		Buys(transactionTemplateComm).   // used=provider.used
-	    Buys(latencyTemplateComm)
+		Buys(transactionTemplateComm). // used=provider.used
+		Buys(latencyTemplateComm)
 	return vAppSupplyChainNodeBuilder.Create()
 }

@@ -36,35 +36,6 @@ func NewMetricSet() MetricSet {
 	return ret
 }
 
-/*
-func (mset MetricSet) AddMetric(uid string, resp, rps float64) {
-	obj := NewObjectMetric(uid, resp, rps)
-	obj.UID = ""
-	mset[uid] = obj
-}
-
-func (mset MetricSet) AddorSetResponeTime(uid string, resp float64) {
-	obj, exist := mset[uid]
-	if !exist {
-		mset.AddMetric(uid, resp, 0.0)
-	} else {
-		if obj.Latency < resp {
-			obj.Latency = resp
-		}
-	}
-}
-
-func (mset MetricSet) AddorSetRPS(uid string, rps float64) {
-	obj, exist := mset[uid]
-	if !exist {
-		mset.AddMetric(uid, 0.0, rps)
-	} else {
-		if obj.RequestPerSecond < rps {
-			obj.RequestPerSecond = rps
-		}
-	}
-}*/
-
 func (mset MetricSet) String() string {
 	buffer := bytes.NewBufferString("")
 

@@ -4,22 +4,22 @@ import (
 	"fmt"
 	"github.com/golang/glog"
 
-	"github.com/turbonomic/kubeturbo/pkg/discovery/monitoring/kubelet"
-	"github.com/turbonomic/kubeturbo/pkg/discovery/monitoring/istio"
 	"github.com/turbonomic/kubeturbo/pkg/cluster"
+	"github.com/turbonomic/kubeturbo/pkg/discovery/monitoring/istio"
+	"github.com/turbonomic/kubeturbo/pkg/discovery/monitoring/kubelet"
 
 	api "k8s.io/client-go/pkg/api/v1"
 )
 
 type VClusterBuilder struct {
-	Name                  string
-	UUID                  string
+	Name string
+	UUID string
 
 	TopoGetter            *cluster.ClusterScraper
 	ContainerMetricGetter *kubelet.KubeletClient
 	AppMetricGetter       *istio.AppMetricClient
 
-	cluster               *VirtualCluster
+	cluster *VirtualCluster
 }
 
 func NewVCluterBuilder(name, uuid string) *VClusterBuilder {
@@ -214,4 +214,3 @@ func (b *VClusterBuilder) AddAppMetric() error {
 	b.cluster.SetAppMetric(pods, vapps)
 	return nil
 }
-

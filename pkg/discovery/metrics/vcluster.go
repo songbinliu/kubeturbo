@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	defaultLatencyCapacity = 500 // 500 ms
+	defaultLatencyCapacity     = 500 // 500 ms
 	defaultTransactionCapacity = 200 // 200 tps
 )
 
@@ -38,9 +38,9 @@ type VNode struct {
 	ObjectMeta
 	ClusterId string
 
-	Memory Resource       // memory unit is KB
-	CPU    Resource       // cpu unit is cpu time in milliseconds: 900m = 0.9 cpu core
-	CoreFrequency float64 // single cpu-core frequency in Mhz
+	Memory        Resource // memory unit is KB
+	CPU           Resource // cpu unit is cpu time in milliseconds: 900m = 0.9 cpu core
+	CoreFrequency float64  // single cpu-core frequency in Mhz
 
 	Detail *api.Node
 
@@ -52,17 +52,17 @@ type Pod struct {
 	ObjectMeta
 	FullName string //FullName = "Namespace/Name"
 
-	Memory Resource      // memory unit is KB
-	CPU    Resource      // cpu unit is cpu time in milliseconds: 900m = 0.9 cpu core
+	Memory Resource // memory unit is KB
+	CPU    Resource // cpu unit is cpu time in milliseconds: 900m = 0.9 cpu core
 
 	Transaction Resource
-	Latency Resource
+	Latency     Resource
 
 	Detail *api.Pod
 
 	//TODO: There will be error if the Pod is associated with multiple services.
 	// This is because the transactions monitored by Service does not know who is the provider.
-	Service *VirtualApp
+	Service          *VirtualApp
 	MainContainerIdx int
 }
 
@@ -84,22 +84,22 @@ type VirtualCluster struct {
 	ObjectMeta
 
 	// indexed by node.Name
-	Nodes    map[string]*VNode
+	Nodes map[string]*VNode
 
 	// indexed by pod.fullName (namespace/name)
-	Pods     map[string]*Pod
+	Pods map[string]*Pod
 
 	// indexed by vapp.fullName (namespace/name)
 	Services map[string]*VirtualApp
 }
 
 func NewCluster(name, uid string) *VirtualCluster {
-	return &VirtualCluster {
+	return &VirtualCluster{
 		ObjectMeta.Name: name,
 		ObjectMeta.UUID: uid,
-		Nodes: make(map[string]*VNode),
-		Pods: make(map[string]*Pod),
-		Services: []*VirtualApp{},
+		Nodes:           make(map[string]*VNode),
+		Pods:            make(map[string]*Pod),
+		Services:        []*VirtualApp{},
 	}
 }
 
@@ -203,7 +203,7 @@ func (vc *VirtualCluster) SetCapacity() {
 
 	for _, node := range vc.Nodes {
 		node.SetCapacity()
-		if len (node.Pods) == 0 {
+		if len(node.Pods) == 0 {
 			glog.V(2).Infof("Node(%s) has no pod.", node.Name)
 			continue
 		}
@@ -233,7 +233,7 @@ func (vc *VirtualCluster) SetAppMetric(podMetrics, svcMetrics istio.MetricSet) e
 			if vapp, exist := vc.Services[k]; exist {
 				vapp.Transaction.Used = v.RequestPerSecond
 				vapp.Latency.Used = v.Latency
-				counter ++
+				counter++
 			}
 		}
 	}
@@ -250,7 +250,7 @@ func (vc *VirtualCluster) SetAppMetric(podMetrics, svcMetrics istio.MetricSet) e
 		if pod, exist := vc.Pods[k]; exist {
 			pod.Transaction.Used = v.RequestPerSecond
 			pod.Latency.Used = v.Latency
-			counter ++
+			counter++
 		}
 	}
 	glog.V(2).Infof("Add app metrics for [%d/%d] Pods.", counter, len(vc.Pods))
@@ -276,9 +276,9 @@ func NewVNode(node *api.Node, clusterId string) *VNode {
 		ObjectMeta.Name: node.Name,
 		ObjectMeta.UUID: node.UID,
 		ObjectMeta.Kind: "vnode",
-		ClusterId: clusterId,
-		Pods: make(map[string]*Pod),
-		Detail: node,
+		ClusterId:       clusterId,
+		Pods:            make(map[string]*Pod),
+		Detail:          node,
 	}
 }
 
@@ -300,14 +300,14 @@ func (vn *VNode) SetCapacity() error {
 }
 
 func NewPod(d *api.Pod) *Pod {
-	return &Pod {
-		ObjectMeta.Name: d.Name,
+	return &Pod{
+		ObjectMeta.Name:      d.Name,
 		ObjectMeta.Namespace: d.Namespace,
-		ObjectMeta.UUID: d.UID,
-		ObjectMeta.Kind: "pod",
-		FullName: genFullName(d.Namespace, d.Name),
-		Detail: d,
-		MainContainerIdx: 0,
+		ObjectMeta.UUID:      d.UID,
+		ObjectMeta.Kind:      "pod",
+		FullName:             genFullName(d.Namespace, d.Name),
+		Detail:               d,
+		MainContainerIdx:     0,
 	}
 }
 
@@ -354,13 +354,13 @@ func NewVirtualApp(svc *api.Service) *VirtualApp {
 	}
 
 	return &VirtualApp{
-		ObjectMeta.Name: svc.Name,
+		ObjectMeta.Name:      svc.Name,
 		ObjectMeta.Namespace: svc.Namespace,
-		ObjectMeta.UUID: svc.UID,
-		ObjectMeta.Kind: "service",
-		FullName: genFullName(svc.Namespace, svc.Name),
-		Ports: ports,
-		Pods: make(map[string]*Pod),
+		ObjectMeta.UUID:      svc.UID,
+		ObjectMeta.Kind:      "service",
+		FullName:             genFullName(svc.Namespace, svc.Name),
+		Ports:                ports,
+		Pods:                 make(map[string]*Pod),
 	}
 }
 
@@ -399,7 +399,7 @@ func genFullName(namespace, name string) string {
 // by port
 func findContainerIndex(containers []api.Container, ports map[int]struct{}) int {
 	found := false
-	idx := - 1
+	idx := -1
 	for i := range containers {
 		container := &containers[i]
 

@@ -5,8 +5,8 @@ import (
 	"github.com/golang/glog"
 	api "k8s.io/client-go/pkg/api/v1"
 
-	"github.com/turbonomic/kubeturbo/pkg/discovery/util"
 	"github.com/turbonomic/kubeturbo/pkg/discovery/metrics"
+	"github.com/turbonomic/kubeturbo/pkg/discovery/util"
 	sdkbuilder "github.com/turbonomic/turbo-go-sdk/pkg/builder"
 	"github.com/turbonomic/turbo-go-sdk/pkg/proto"
 )
@@ -21,7 +21,7 @@ var (
 	}
 )
 
-type ServiceEntityDTOBuilder struct{
+type ServiceEntityDTOBuilder struct {
 	vcluster *metrics.VirtualCluster
 }
 
@@ -48,7 +48,7 @@ func (builder *VAppEntityDTOBuilder) BuildEntityDTO() ([]*proto.EntityDTO, error
 
 		//1. commodities it will buy
 		if err := builder.getCommoditiesBought(ebuilder, vapp); err != nil {
-			glog.Errorf("Failed to create Vapp(%) entityDTO: %v", serviceName, err)
+			glog.Errorf("Failed to create Vapp(%s) entityDTO: %v", serviceName, err)
 			continue
 		}
 
@@ -98,18 +98,18 @@ func (builder *VAppEntityDTOBuilder) getCommoditiesBought(ebuilder *sdkbuilder.E
 		provider := sdkbuilder.CreateProvider(proto.EntityDTO_APPLICATION, appId)
 
 		tranComm, err := sdkbuilder.NewCommodityDTOBuilder(proto.CommodityDTO_TRANSACTION).
-									Key(appId).
-									Used(pod.Transaction.Used).
-									Create()
+			Key(appId).
+			Used(pod.Transaction.Used).
+			Create()
 		if err != nil {
 			glog.Errorf("Faild to create transaction commodity for Vapp(%v) Pod(%v): %v", vapp.FullName, pod.FullName, err)
 			continue
 		}
 
 		latencyComm, err := sdkbuilder.NewCommodityDTOBuilder(proto.CommodityDTO_RESPONSE_TIME).
-			                    Key(appId).
-		                        Used(pod.Latency.Used).
-		                        Create()
+			Key(appId).
+			Used(pod.Latency.Used).
+			Create()
 		if err != nil {
 			glog.Errorf("Faild to create latency commodity for Vapp(%v) Pod(%v): %v", vapp.FullName, pod.FullName, err)
 			continue
@@ -129,9 +129,9 @@ func (builder *VAppEntityDTOBuilder) getCommoditiesSold(vapp *metrics.VirtualApp
 
 	//1. Transactions per second
 	ebuilder := sdkbuilder.NewCommodityDTOBuilder(proto.CommodityDTO_TRANSACTION).
-		                   Key(svcId).
-	                       Capacity(vapp.Transaction.Capacity).
-	                       Used(vapp.Transaction.Used)
+		Key(svcId).
+		Capacity(vapp.Transaction.Capacity).
+		Used(vapp.Transaction.Used)
 	tranCommodity, err := ebuilder.Create()
 	if err != nil {
 		glog.Errorf("Failed to create Transaction commodity for service(%v) for selling: %v", vapp.FullName, err)
@@ -141,16 +141,15 @@ func (builder *VAppEntityDTOBuilder) getCommoditiesSold(vapp *metrics.VirtualApp
 
 	//2. Latency
 	ebuilder2 := sdkbuilder.NewCommodityDTOBuilder(proto.CommodityDTO_RESPONSE_TIME).
-		                   Key(svcId).
-	                       Capacity(vapp.Latency.Capacity).
-	                       Used(vapp.Latency.Used)
+		Key(svcId).
+		Capacity(vapp.Latency.Capacity).
+		Used(vapp.Latency.Used)
 	latencyCommodity, err := ebuilder2.Create()
 	if err != nil {
 		glog.Errorf("Failed to create Latency commodity for service(%v) for selling: %v", vapp.FullName, err)
 		return result, err
 	}
 	result = append(result, latencyCommodity)
-
 
 	return result, nil
 }
