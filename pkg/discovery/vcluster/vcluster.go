@@ -106,7 +106,7 @@ func NewCluster(name, uid string) *VirtualCluster {
 }
 
 func (vc *VirtualCluster) AddVnode(vnode *VNode) error {
-	uid := vnode.UUID
+	uid := vnode.Name
 
 	if b, exist := vc.Nodes[uid]; exist {
 		err := fmt.Errorf("Vnode with uid(%v) already exists : %++v", uid, b)
