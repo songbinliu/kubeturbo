@@ -3,25 +3,18 @@ package task
 import (
 	api "k8s.io/client-go/pkg/api/v1"
 
-	"github.com/turbonomic/kubeturbo/pkg/discovery/metrics"
+	"github.com/turbonomic/kubeturbo/pkg/discovery/vcluster"
 	"github.com/turbonomic/turbo-go-sdk/pkg/proto"
 
 	"github.com/pborman/uuid"
 )
 
 const (
-	ClusterType     DiscoveredEntityType = "Cluster"
-	NodeType        DiscoveredEntityType = "Node"
-	PodType         DiscoveredEntityType = "Pod"
-	ContainerType   DiscoveredEntityType = "Container"
-	ApplicationType DiscoveredEntityType = "Application"
-	ServiceType     DiscoveredEntityType = "Service"
 
 	TaskSucceeded TaskResultState = "Succeeded"
 	TaskFailed    TaskResultState = "Failed"
 )
-
-type DiscoveredEntityType string
+type TaskResultState string
 
 type Task struct {
 	uid string
@@ -30,11 +23,11 @@ type Task struct {
 	podList  []*api.Pod
 
 	//vcluster is assumed readonly for this task; don't modify it.
-	vCluster *metrics.VirtualCluster
+	vCluster *vcluster.VirtualCluster
 }
 
 // Worker task is consisted of a list of nodes the worker must discover.
-func NewTask(vc *metrics.VirtualCluster) *Task {
+func NewTask(vc *vcluster.VirtualCluster) *Task {
 	return &Task{
 		uid:      uuid.NewUUID().String(),
 		vCluster: vc,
@@ -62,8 +55,6 @@ func (t *Task) NodeList() []*api.Node {
 func (t *Task) PodList() []*api.Pod {
 	return t.podList
 }
-
-type TaskResultState string
 
 // A TaskResult contains a state, indicate whether the task is finished successfully; a err if there is any; a list of
 // EntityDTO.

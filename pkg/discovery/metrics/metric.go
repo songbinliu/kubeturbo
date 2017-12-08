@@ -1,9 +1,5 @@
 package metrics
 
-import "github.com/turbonomic/kubeturbo/pkg/discovery/task"
-
-type ResourceType string
-
 const (
 	CPU               ResourceType = "CPU"
 	Memory            ResourceType = "Memory"
@@ -18,13 +14,27 @@ const (
 	CpuFrequency ResourceType = "CpuFrequency"
 )
 
-type MetricProp string
+type ResourceType string
+
+const (
+	ClusterType     DiscoveredEntityType = "Cluster"
+	NodeType        DiscoveredEntityType = "Node"
+	PodType         DiscoveredEntityType = "Pod"
+	ContainerType   DiscoveredEntityType = "Container"
+	ApplicationType DiscoveredEntityType = "Application"
+	ServiceType     DiscoveredEntityType = "Service"
+
+)
+
+type DiscoveredEntityType string
 
 const (
 	Capacity    MetricProp = "Capacity"
 	Used        MetricProp = "Used"
 	Reservation MetricProp = "Reservation"
 )
+
+type MetricProp string
 
 type Metric interface {
 	GetUID() string
@@ -51,13 +61,13 @@ func NewResourceMetric(rType ResourceType, mProp MetricProp, v float64) Resource
 type EntityResourceMetric struct {
 	metricUID string
 
-	entityType task.DiscoveredEntityType
+	entityType DiscoveredEntityType
 	entityID   string
 
 	ResourceMetric
 }
 
-func NewEntityResourceMetric(eType task.DiscoveredEntityType, id string, rType ResourceType, mProp MetricProp,
+func NewEntityResourceMetric(eType DiscoveredEntityType, id string, rType ResourceType, mProp MetricProp,
 	v float64) EntityResourceMetric {
 	return EntityResourceMetric{
 		metricUID:      GenerateEntityResourceMetricUID(eType, id, rType, mProp),
@@ -76,21 +86,21 @@ func (m EntityResourceMetric) GetValue() interface{} {
 }
 
 // Generate the UID for each metric entry based on entityType, entityID, resourceType and metricType.
-func GenerateEntityResourceMetricUID(eType task.DiscoveredEntityType, id string, rType ResourceType, mType MetricProp) string {
+func GenerateEntityResourceMetricUID(eType DiscoveredEntityType, id string, rType ResourceType, mType MetricProp) string {
 	return string(eType) + "-" + id + "-" + string(rType) + "-" + string(mType)
 }
 
 type EntityStateMetric struct {
 	metricUID string
 
-	entityType task.DiscoveredEntityType
+	entityType DiscoveredEntityType
 	entityID   string
 
 	resourceType ResourceType
 	value        interface{}
 }
 
-func NewEntityStateMetric(eType task.DiscoveredEntityType, id string, rType ResourceType, v interface{}) EntityStateMetric {
+func NewEntityStateMetric(eType DiscoveredEntityType, id string, rType ResourceType, v interface{}) EntityStateMetric {
 	return EntityStateMetric{
 		metricUID:    GenerateEntityStateMetricUID(eType, id, rType),
 		entityType:   eType,
@@ -109,6 +119,6 @@ func (m EntityStateMetric) GetValue() interface{} {
 }
 
 // Generate the UID for each metric entry based on entityType, entityID and resourceType.
-func GenerateEntityStateMetricUID(eType task.DiscoveredEntityType, id string, rType ResourceType) string {
+func GenerateEntityStateMetricUID(eType DiscoveredEntityType, id string, rType ResourceType) string {
 	return string(eType) + "-" + id + "-" + string(rType)
 }
