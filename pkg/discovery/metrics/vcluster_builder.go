@@ -11,6 +11,13 @@ import (
 	api "k8s.io/client-go/pkg/api/v1"
 )
 
+type VClusterBuilderConfig struct {
+	// all this three should be thread-safe, and will be shared by multiple VClusterBuilder-s
+	TopoGetter            *cluster.ClusterScraper
+	ContainerMetricGetter *kubelet.KubeletClient
+	AppMetricGetter       *istio.AppMetricClient
+}
+
 type VClusterBuilder struct {
 	Name string
 	UUID string
@@ -22,23 +29,27 @@ type VClusterBuilder struct {
 	cluster *VirtualCluster
 }
 
-func NewVCluterBuilder(name, uuid string) *VClusterBuilder {
+func NewVClusterBuilderConfig(k8sClient *cluster.ClusterScraper,
+	containerMetricClient *kubelet.KubeletClient,
+	appMetricClient *istio.AppMetricClient) *VClusterBuilderConfig {
 	return &VClusterBuilder{
-		Name: name,
-		UUID: uuid,
+		TopoGetter:            k8sClient,
+		ContainerMetricGetter: containerMetricClient,
+		AppMetricGetter:       appMetricClient,
 	}
 }
 
-func (b *VClusterBuilder) SetTopoBuilder(kube *cluster.ClusterScraper) {
-	b.TopoGetter = kube
+func NewVCluterBuilder(config *VClusterBuilderConfig) *VClusterBuilder {
+	return &VClusterBuilder{
+		TopoGetter:            config.TopoGetter,
+		ContainerMetricGetter: config.ContainerMetricGetter,
+		AppMetricGetter:       config.AppMetricGetter,
+	}
 }
 
-func (b *VClusterBuilder) SetPodMetricBuilder(klet *kubelet.KubeletClient) {
-	b.ContainerMetricGetter = klet
-}
-
-func (b *VClusterBuilder) SetAppMetricBuilder(app *istio.AppMetricClient) {
-	b.AppMetricGetter = app
+func (b *VClusterBuilder) SetNameId(name, id string) {
+	b.Name = name
+	b.UUID = id
 }
 
 func (b *VClusterBuilder) BuildCluster() (*VirtualCluster, error) {
@@ -54,6 +65,7 @@ func (b *VClusterBuilder) BuildCluster() (*VirtualCluster, error) {
 	if err := b.AddContainerMetric(); err != nil {
 		err := fmt.Errorf("Failed to add Container metric to cluster: %v", err)
 		glog.Warning(err.Error())
+		//TODO: return on error
 	}
 
 	if err := b.AddAppMetric(); err != nil {

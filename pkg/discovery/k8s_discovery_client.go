@@ -9,6 +9,7 @@ import (
 
 	"github.com/turbonomic/kubeturbo/pkg/cluster"
 	"github.com/turbonomic/kubeturbo/pkg/discovery/configs"
+	"github.com/turbonomic/kubeturbo/pkg/discovery/metrics"
 	"github.com/turbonomic/kubeturbo/pkg/discovery/worker"
 	"github.com/turbonomic/kubeturbo/pkg/discovery/worker/compliance"
 	"github.com/turbonomic/kubeturbo/pkg/registration"
@@ -41,7 +42,8 @@ func NewDiscoveryConfig(kubeClient *kubeClient.Clientset, probeConfig *configs.P
 }
 
 type K8sDiscoveryClient struct {
-	config *DiscoveryClientConfig
+	config          *DiscoveryClientConfig
+	vcBuilderConfig *metrics.VClusterBuilderConfig
 
 	dispatcher      *worker.Dispatcher
 	resultCollector *worker.ResultCollector
@@ -49,7 +51,7 @@ type K8sDiscoveryClient struct {
 	wg sync.WaitGroup
 }
 
-func NewK8sDiscoveryClient(config *DiscoveryClientConfig) *K8sDiscoveryClient {
+func NewK8sDiscoveryClient(config *DiscoveryClientConfig, vcBuilderConfig *metrics.VClusterBuilderConfig) *K8sDiscoveryClient {
 	// make maxWorkerCount of result collector twice the worker count.
 	resultCollector := worker.NewResultCollector(workerCount * 2)
 
@@ -59,6 +61,7 @@ func NewK8sDiscoveryClient(config *DiscoveryClientConfig) *K8sDiscoveryClient {
 
 	dc := &K8sDiscoveryClient{
 		config:          config,
+		vcBuilderConfig: vcBuilderConfig,
 		dispatcher:      dispatcher,
 		resultCollector: resultCollector,
 	}
@@ -123,16 +126,29 @@ func (dc *K8sDiscoveryClient) Discover(accountValues []*proto.AccountValue) (*pr
 }
 
 func (dc *K8sDiscoveryClient) discoverWithNewFramework() ([]*proto.EntityDTO, error) {
+	result := []*proto.EntityDTO{}
+
+	//1. build the virtual cluster with metrics
+	vclusterBuilder := metrics.NewVCluterBuilder(dc.vcBuilderConfig)
+	vclusterBuilder.SetNameId("unknown-cluster", "unknown-Id")
+	vcluster, err := vclusterBuilder.BuildCluster()
+	if err != nil {
+		glog.Errorf("Failed to build virtual cluster: %v", err)
+		return result, nil
+	}
+
+	//2. build DTOs based on the virtualCluster
 	nodes, err := dc.config.k8sClusterScraper.GetAllNodes()
 	if err != nil {
 		return nil, fmt.Errorf("Failed to get all nodes in the cluster: %s", err)
 	}
 
-	workerCount := dc.dispatcher.Dispatch(nodes)
+	//2.1 build node, pod, container, and app Entity-DTOs
+	workerCount := dc.dispatcher.Dispatch(nodes, vcluster)
 	entityDTOs := dc.resultCollector.Collect(workerCount)
 	glog.V(2).Infof("Discovery workers have finished discovery work with %d entityDTOs built. Now performing service discovery...", len(entityDTOs))
 
-	// affinity process
+	//2.2 add affinity/anti-affinity commodities
 	glog.V(2).Infof("begin to process affinity.")
 	affinityProcessorConfig := compliance.NewAffinityProcessorConfig(dc.config.k8sClusterScraper)
 	affinityProcessor, err := compliance.NewAffinityProcessor(affinityProcessorConfig)
@@ -142,9 +158,9 @@ func (dc *K8sDiscoveryClient) discoverWithNewFramework() ([]*proto.EntityDTO, er
 		entityDTOs = affinityProcessor.ProcessAffinityRules(entityDTOs)
 	}
 
+	//2.3 build vApp Entity-DTOs
 	glog.V(2).Infof("begin to generate service EntityDTOs.")
-	svcWorkerConfig := worker.NewK8sServiceDiscoveryWorkerConfig(dc.config.k8sClusterScraper)
-	svcDiscWorker, err := worker.NewK8sServiceDiscoveryWorker(svcWorkerConfig)
+	svcDiscWorker, err := worker.NewK8sServiceDiscoveryWorker(vcluster)
 	svcDiscResult := svcDiscWorker.Do(entityDTOs)
 	if svcDiscResult.Err() != nil {
 		glog.Errorf("Failed to discover services from current Kubernetes cluster with the new discovery framework: %s", svcDiscResult.Err())

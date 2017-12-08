@@ -18,24 +18,19 @@ const (
 	API_PATH_SERVICE = "/service/metrics"
 )
 
-type AppMetricClientConfig struct {
-	// a string with hostname and port, http://localhost:8081
-	Host string
-}
-
 type AppMetricClient struct {
 	client *http.Client
-	config *AppMetricClientConfig
+	host   string
 }
 
-func NewMetricClient(conf *AppMetricClientConfig) (*AppMetricClient, error) {
+func NewMetricClient(host string) (*AppMetricClient, error) {
 	//1. get http client
 	client := &http.Client{
 		Timeout: defaultTimeOut,
 	}
 
 	//2. check whether it is using ssl
-	addr, err := url.Parse(conf.Host)
+	addr, err := url.Parse(host)
 	if err == nil && addr.Scheme == "https" {
 		tr := &http.Transport{
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
@@ -43,17 +38,17 @@ func NewMetricClient(conf *AppMetricClientConfig) (*AppMetricClient, error) {
 		client.Transport = tr
 	}
 
-	glog.V(2).Infof("AppMetrics server address is: %v", conf.Host)
+	glog.V(2).Infof("AppMetrics server address is: %v", host)
 	app := &AppMetricClient{
 		client: client,
-		config: conf,
+		host:   host,
 	}
 
 	return app, nil
 }
 
 func (c *AppMetricClient) GetMetrics(path string) (MetricSet, error) {
-	p := fmt.Sprintf("%v%v", c.config.Host, path)
+	p := fmt.Sprintf("%v%v", c.host, path)
 	glog.V(2).Infof("path=%v", p)
 
 	//1. set up request setting

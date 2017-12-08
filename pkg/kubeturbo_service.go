@@ -7,6 +7,7 @@ import (
 	api "k8s.io/client-go/pkg/api/v1"
 
 	"github.com/turbonomic/kubeturbo/pkg/action"
+	"github.com/turbonomic/kubeturbo/pkg/discovery/metrics"
 	discutil "github.com/turbonomic/kubeturbo/pkg/discovery/util"
 	turboscheduler "github.com/turbonomic/kubeturbo/pkg/scheduler"
 	"github.com/turbonomic/kubeturbo/pkg/turbostore"
@@ -33,8 +34,10 @@ func NewKubeturboService(c *Config) *KubeturboService {
 	actionHandlerConfig := action.NewActionHandlerConfig(c.Client, c.KubeletClient, c.k8sVersion, c.noneSchedulerName, stype)
 	actionHandler := action.NewActionHandler(actionHandlerConfig)
 
+	vclusterBuilderConfig := metrics.NewVClusterBuilderConfig(c.Client, c.KubeletClient, c.AppMetryClient)
+
 	k8sTAPServiceConfig := NewK8sTAPServiceConfig(c.Client, c.ProbeConfig, c.tapSpec)
-	k8sTAPService, err := NewKubernetesTAPService(k8sTAPServiceConfig, actionHandler)
+	k8sTAPService, err := NewKubernetesTAPService(k8sTAPServiceConfig, actionHandler, vclusterBuilderConfig)
 	if err != nil {
 		glog.Fatalf("Unexpected error while creating Kuberntes TAP service: %s", err)
 	}

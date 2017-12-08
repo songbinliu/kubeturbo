@@ -3,6 +3,7 @@ package task
 import (
 	api "k8s.io/client-go/pkg/api/v1"
 
+	"github.com/turbonomic/kubeturbo/pkg/discovery/metrics"
 	"github.com/turbonomic/turbo-go-sdk/pkg/proto"
 
 	"github.com/pborman/uuid"
@@ -27,12 +28,16 @@ type Task struct {
 
 	nodeList []*api.Node
 	podList  []*api.Pod
+
+	//vcluster is assumed readonly for this task; don't modify it.
+	vCluster *metrics.VirtualCluster
 }
 
 // Worker task is consisted of a list of nodes the worker must discover.
-func NewTask() *Task {
+func NewTask(vc *metrics.VirtualCluster) *Task {
 	return &Task{
-		uid: uuid.NewUUID().String(),
+		uid:      uuid.NewUUID().String(),
+		vCluster: vc,
 	}
 }
 

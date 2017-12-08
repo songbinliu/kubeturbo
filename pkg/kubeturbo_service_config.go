@@ -9,6 +9,7 @@ import (
 
 	vmtcache "github.com/turbonomic/kubeturbo/pkg/cache"
 	"github.com/turbonomic/kubeturbo/pkg/discovery/configs"
+	"github.com/turbonomic/kubeturbo/pkg/discovery/monitoring/istio"
 	"github.com/turbonomic/kubeturbo/pkg/discovery/monitoring/kubelet"
 	"github.com/turbonomic/kubeturbo/pkg/turbostore"
 )
@@ -20,8 +21,9 @@ type Config struct {
 	//turboStore *turbostore.TurboStore
 	broker turbostore.Broker
 
-	Client        *client.Clientset
-	KubeletClient *kubelet.KubeletClient
+	Client         *client.Clientset
+	KubeletClient  *kubelet.KubeletClient
+	AppMetryClient *istio.AppMetricClient
 
 	//TODO: delete these two
 	// they were used for rescheduler, but they are useless now.
@@ -60,6 +62,11 @@ func (c *Config) WithKubeClient(client *client.Clientset) *Config {
 
 func (c *Config) WithKubeletClient(client *kubelet.KubeletClient) *Config {
 	c.KubeletClient = client
+	return c
+}
+
+func (c *Config) WithAppMetryClient(client *istio.AppMetricClient) *Config {
+	c.AppMetryClient = client
 	return c
 }
 

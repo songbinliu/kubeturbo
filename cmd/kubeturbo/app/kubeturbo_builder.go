@@ -21,6 +21,7 @@ import (
 	"github.com/turbonomic/kubeturbo/pkg/action/executor"
 	"github.com/turbonomic/kubeturbo/pkg/discovery/configs"
 	"github.com/turbonomic/kubeturbo/pkg/discovery/monitoring"
+	"github.com/turbonomic/kubeturbo/pkg/discovery/monitoring/istio"
 	"github.com/turbonomic/kubeturbo/pkg/discovery/monitoring/k8sconntrack"
 	"github.com/turbonomic/kubeturbo/pkg/discovery/monitoring/kubelet"
 	"github.com/turbonomic/kubeturbo/pkg/discovery/monitoring/master"
@@ -65,6 +66,9 @@ type VMTServer struct {
 	KubeletPort        int
 	EnableKubeletHttps bool
 
+	//App metrics
+	AppMetricUrl string
+
 	// for Move Action
 	K8sVersion        string
 	NoneSchedulerName string
@@ -94,6 +98,7 @@ func (s *VMTServer) AddFlags(fs *pflag.FlagSet) {
 	fs.BoolVar(&s.EnableKubeletHttps, "kubelet-https", kubelet.DefaultKubeletHttps, "Indicate if Kubelet is running on https server")
 	fs.StringVar(&s.K8sVersion, "k8sVersion", executor.HigherK8sVersion, "the kubernetes server version; for openshift, it is the underlying Kubernetes' version.")
 	fs.StringVar(&s.NoneSchedulerName, "noneSchedulerName", executor.DefaultNoneExistSchedulerName, "a none-exist scheduler name, to prevent controller to create Running pods during move Action.")
+	fs.StringVar(&s.AppMetricUrl, "app-metric-url", "http://127.0.0.1:8081", "the url to get App metrics")
 
 	//leaderelection.BindFlags(&s.LeaderElection, fs)
 }
@@ -145,6 +150,16 @@ func (s *VMTServer) createKubeletClientOrDie(kubeConfig *restclient.Config) *kub
 	}
 
 	return kubeletClient
+}
+
+func (s *VMTServer) createAppMetricClient() *istio.AppMetricClient {
+	appClient, err := istio.NewMetricClient(s.AppMetricUrl)
+	if err != nil {
+		glog.Errorf("failed to create appMetricClient: %v", err)
+		return nil
+	}
+
+	return appClient
 }
 
 func (s *VMTServer) createProbeConfigOrDie(kubeConfig *restclient.Config, kubeletClient *kubelet.KubeletClient) *configs.ProbeConfig {
@@ -232,6 +247,7 @@ func (s *VMTServer) Run(_ []string) error {
 	kubeConfig := s.createKubeConfigOrDie()
 	kubeClient := s.createKubeClientOrDie(kubeConfig)
 	kubeletClient := s.createKubeletClientOrDie(kubeConfig)
+	appMetryClient := s.createAppMetricClient()
 	probeConfig := s.createProbeConfigOrDie(kubeConfig, kubeletClient)
 	broker := turbostore.NewPodBroker()
 
@@ -239,6 +255,7 @@ func (s *VMTServer) Run(_ []string) error {
 	vmtConfig.WithTapSpec(k8sTAPSpec).
 		WithKubeClient(kubeClient).
 		WithKubeletClient(kubeletClient).
+		WithAppMetryClient(appMetryClient).
 		WithProbeConfig(probeConfig).
 		WithBroker(broker).
 		WithK8sVersion(s.K8sVersion).
