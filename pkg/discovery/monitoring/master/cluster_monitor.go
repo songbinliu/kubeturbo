@@ -103,7 +103,7 @@ func (m *ClusterMonitor) findClusterID() error {
 		return err
 	}
 	// TODO use a constant for cluster commodity key.
-	clusterInfo := metrics.NewEntityStateMetric(task.ClusterType, "", metrics.Cluster, kubernetesSvcID)
+	clusterInfo := metrics.NewEntityStateMetric(metrics.ClusterType, "", metrics.Cluster, kubernetesSvcID)
 	m.sink.AddNewMetricEntries(clusterInfo)
 	return nil
 }
@@ -137,13 +137,13 @@ func (m *ClusterMonitor) genNodeResourceMetrics(node *api.Node) error {
 	cpuCapacityCore, memoryCapacityKiloBytes := util.GetCpuAndMemoryValues(node.Status.Allocatable)
 	glog.V(4).Infof("Cpu capacity of node %s is %f core", node.Name, cpuCapacityCore)
 	glog.V(4).Infof("Memory capacity of node %s is %f Kb", node.Name, memoryCapacityKiloBytes)
-	m.genCapacityMetrics(task.NodeType, key, cpuCapacityCore, memoryCapacityKiloBytes)
+	m.genCapacityMetrics(metrics.NodeType, key, cpuCapacityCore, memoryCapacityKiloBytes)
 
 	//2. Provision Capacity of cpu and memory
 	// The provisioned resources have the same capacities.
 	cpuProvisionedCapacity := cpuCapacityCore
 	memoryProvisionedCapacity := memoryCapacityKiloBytes
-	m.genProvisionCapacityMetrics(task.NodeType, key, cpuProvisionedCapacity, memoryProvisionedCapacity)
+	m.genProvisionCapacityMetrics(metrics.NodeType, key, cpuProvisionedCapacity, memoryProvisionedCapacity)
 
 	//3. Generate metrics for the hosted Pods(and containers)
 	m.genNodePodsMetrics(node, cpuCapacityCore, memoryCapacityKiloBytes)
@@ -155,7 +155,7 @@ func (m *ClusterMonitor) genNodeResourceMetrics(node *api.Node) error {
 	if err != nil {
 		return fmt.Errorf("failed to get provision used metrics: %v", err)
 	}
-	m.genProvisionUsedMetrics(task.NodeType, key, cpuProvisionedUsed, memProvisionedUsed)
+	m.genProvisionUsedMetrics(metrics.NodeType, key, cpuProvisionedUsed, memProvisionedUsed)
 	glog.V(4).Infof("Cpu provisioned used of node %s is %f core", node.Name, cpuProvisionedUsed)
 	glog.V(4).Infof("Memory provisioned used of node %s is %f Kb", node.Name, memProvisionedUsed)
 	return nil
@@ -172,7 +172,7 @@ func parseNodeLabels(node *api.Node) metrics.EntityStateMetric {
 
 			labels = append(labels, l)
 		}
-		return metrics.NewEntityStateMetric(task.NodeType, util.NodeKeyFunc(node), metrics.Access, labels)
+		return metrics.NewEntityStateMetric(metrics.NodeType, util.NodeKeyFunc(node), metrics.Access, labels)
 	} else {
 		return metrics.EntityStateMetric{}
 	}
@@ -206,12 +206,12 @@ func (m *ClusterMonitor) genPodMetrics(pod *api.Pod, nodeCPUCapacity, nodeMemCap
 	//1. pod.capacity == node.Capacity
 	cpuCapacity := nodeCPUCapacity
 	memCapacity := nodeMemCapacity
-	m.genCapacityMetrics(task.PodType, key, cpuCapacity, memCapacity)
+	m.genCapacityMetrics(metrics.PodType, key, cpuCapacity, memCapacity)
 
 	//2. Reservation
 	//2.1 Container Capacity and Reservation
 	cpuRequest, memRequest := m.genContainerMetrics(pod, cpuCapacity, memCapacity)
-	m.genReserveMetrics(task.PodType, key, cpuRequest, memRequest)
+	m.genReserveMetrics(metrics.PodType, key, cpuRequest, memRequest)
 	return
 }
 
@@ -241,13 +241,13 @@ func (m *ClusterMonitor) genContainerMetrics(pod *api.Pod, podCPU, podMem float6
 		if memLimit > 1 {
 			memCapacity = float64(memLimit) / util.KilobytesToBytes
 		}
-		m.genCapacityMetrics(task.ContainerType, key, cpuCapacity, memCapacity)
+		m.genCapacityMetrics(metrics.ContainerType, key, cpuCapacity, memCapacity)
 
 		//2. reservation
 		requests := container.Resources.Requests
 		cpuRequest := float64(requests.Cpu().MilliValue()) / util.MilliToUnit
 		memRequest := float64(requests.Memory().Value()) / util.KilobytesToBytes
-		m.genReserveMetrics(task.ContainerType, key, cpuRequest, memRequest)
+		m.genReserveMetrics(metrics.ContainerType, key, cpuRequest, memRequest)
 
 		totalCPU += cpuRequest
 		totalMem += memRequest
@@ -256,25 +256,25 @@ func (m *ClusterMonitor) genContainerMetrics(pod *api.Pod, podCPU, podMem float6
 	return totalCPU, totalMem
 }
 
-func (m *ClusterMonitor) genProvisionUsedMetrics(etype task.DiscoveredEntityType, key string, cpu, memory float64) {
+func (m *ClusterMonitor) genProvisionUsedMetrics(etype metrics.DiscoveredEntityType, key string, cpu, memory float64) {
 	cpuMetric := metrics.NewEntityResourceMetric(etype, key, metrics.CPUProvisioned, metrics.Used, cpu)
 	memMetric := metrics.NewEntityResourceMetric(etype, key, metrics.MemoryProvisioned, metrics.Used, memory)
 	m.sink.AddNewMetricEntries(cpuMetric, memMetric)
 }
 
-func (m *ClusterMonitor) genProvisionCapacityMetrics(etype task.DiscoveredEntityType, key string, cpu, memory float64) {
+func (m *ClusterMonitor) genProvisionCapacityMetrics(etype metrics.DiscoveredEntityType, key string, cpu, memory float64) {
 	cpuMetric := metrics.NewEntityResourceMetric(etype, key, metrics.CPUProvisioned, metrics.Capacity, cpu)
 	memMetric := metrics.NewEntityResourceMetric(etype, key, metrics.MemoryProvisioned, metrics.Capacity, memory)
 	m.sink.AddNewMetricEntries(cpuMetric, memMetric)
 }
 
-func (m *ClusterMonitor) genCapacityMetrics(etype task.DiscoveredEntityType, key string, cpu, memory float64) {
+func (m *ClusterMonitor) genCapacityMetrics(etype metrics.DiscoveredEntityType, key string, cpu, memory float64) {
 	cpuMetric := metrics.NewEntityResourceMetric(etype, key, metrics.CPU, metrics.Capacity, cpu)
 	memMetric := metrics.NewEntityResourceMetric(etype, key, metrics.Memory, metrics.Capacity, memory)
 	m.sink.AddNewMetricEntries(cpuMetric, memMetric)
 }
 
-func (m *ClusterMonitor) genReserveMetrics(etype task.DiscoveredEntityType, key string, cpu, memory float64) {
+func (m *ClusterMonitor) genReserveMetrics(etype metrics.DiscoveredEntityType, key string, cpu, memory float64) {
 	cpuMetric := metrics.NewEntityResourceMetric(etype, key, metrics.CPU, metrics.Reservation, cpu)
 	memMetric := metrics.NewEntityResourceMetric(etype, key, metrics.Memory, metrics.Reservation, memory)
 	m.sink.AddNewMetricEntries(cpuMetric, memMetric)

@@ -11,13 +11,13 @@ import (
 	"github.com/turbonomic/kubeturbo/pkg/action"
 	"github.com/turbonomic/kubeturbo/pkg/discovery"
 	"github.com/turbonomic/kubeturbo/pkg/discovery/configs"
+	"github.com/turbonomic/kubeturbo/pkg/discovery/vcluster"
 	"github.com/turbonomic/kubeturbo/pkg/registration"
 
 	"github.com/turbonomic/turbo-go-sdk/pkg/probe"
 	"github.com/turbonomic/turbo-go-sdk/pkg/service"
 
 	"github.com/golang/glog"
-	"github.com/turbonomic/kubeturbo/pkg/discovery/metrics"
 )
 
 type K8sTAPServiceSpec struct {
@@ -84,7 +84,7 @@ type K8sTAPService struct {
 	*service.TAPService
 }
 
-func NewKubernetesTAPService(config *K8sTAPServiceConfig, actionHandler *action.ActionHandler, vcBuilderConfig *metrics.VClusterBuilder) (*K8sTAPService, error) {
+func NewKubernetesTAPService(config *K8sTAPServiceConfig, actionHandler *action.ActionHandler, vcBuilderConfig *vcluster.VClusterBuilderConfig) (*K8sTAPService, error) {
 	if config == nil || config.spec == nil {
 		return nil, errors.New("Invalid K8sTAPServiceConfig")
 	}

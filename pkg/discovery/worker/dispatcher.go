@@ -7,7 +7,7 @@ import (
 	api "k8s.io/client-go/pkg/api/v1"
 
 	"github.com/turbonomic/kubeturbo/pkg/discovery/configs"
-	"github.com/turbonomic/kubeturbo/pkg/discovery/metrics"
+	"github.com/turbonomic/kubeturbo/pkg/discovery/vcluster"
 	"github.com/turbonomic/kubeturbo/pkg/discovery/task"
 
 	"github.com/golang/glog"
@@ -64,7 +64,7 @@ func (d *Dispatcher) RegisterWorker(worker *k8sDiscoveryWorker) {
 	d.workerPool <- worker.taskChan
 }
 
-func (d *Dispatcher) Dispatch(nodes []*api.Node, vc *metrics.VirtualCluster) int {
+func (d *Dispatcher) Dispatch(nodes []*api.Node, vc *vcluster.VirtualCluster) int {
 	// make sure when len(node) < workerCount, worker will receive at most 1 node to discover
 	perTaskNodeLength := int(math.Ceil(float64(len(nodes)) / float64(d.config.workerCount)))
 	glog.V(3).Infof("The number of nodes per task is: %d", perTaskNodeLength)

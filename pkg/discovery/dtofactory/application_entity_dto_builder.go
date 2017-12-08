@@ -8,7 +8,7 @@ import (
 
 	"github.com/turbonomic/kubeturbo/pkg/discovery/dtofactory/property"
 	"github.com/turbonomic/kubeturbo/pkg/discovery/metrics"
-	"github.com/turbonomic/kubeturbo/pkg/discovery/task"
+	"github.com/turbonomic/kubeturbo/pkg/discovery/vcluster"
 	"github.com/turbonomic/kubeturbo/pkg/discovery/util"
 
 	sdkbuilder "github.com/turbonomic/turbo-go-sdk/pkg/builder"
@@ -36,19 +36,20 @@ var (
 
 type applicationEntityDTOBuilder struct {
 	generalBuilder
-	vcluster *metrics.VirtualCluster
+	vCluster *vcluster.VirtualCluster
 }
 
-func NewApplicationEntityDTOBuilder(sink *metrics.EntityMetricSink) *applicationEntityDTOBuilder {
+func NewApplicationEntityDTOBuilder(sink *metrics.EntityMetricSink, vc *vcluster.VirtualCluster) *applicationEntityDTOBuilder {
 	return &applicationEntityDTOBuilder{
 		generalBuilder: newGeneralBuilder(sink),
+		vCluster: vc,
 	}
 }
 
 // get hosting node cpu frequency
 func (builder *applicationEntityDTOBuilder) getNodeCPUFrequency(pod *api.Pod) (float64, error) {
 	key := util.NodeKeyFromPodFunc(pod)
-	cpuFrequencyUID := metrics.GenerateEntityStateMetricUID(task.NodeType, key, metrics.CpuFrequency)
+	cpuFrequencyUID := metrics.GenerateEntityStateMetricUID(metrics.NodeType, key, metrics.CpuFrequency)
 	cpuFrequencyMetric, err := builder.metricsSink.GetMetric(cpuFrequencyUID)
 	if err != nil {
 		err := fmt.Errorf("Failed to get cpu frequency from sink for node %s: %v", key, err)
@@ -71,7 +72,7 @@ func (builder *applicationEntityDTOBuilder) BuildEntityDTOs(pods []*api.Pod) ([]
 			continue
 		}
 
-		vpod, exist := builder.vcluster.Pods[podFullName]
+		vpod, exist := builder.vCluster.Pods[podFullName]
 		if !exist {
 			err := fmt.Errorf("Potential bug: cannot find pod[%v] from vcluster.", podFullName)
 			glog.Errorf(err.Error())
@@ -134,10 +135,11 @@ func (builder *applicationEntityDTOBuilder) BuildEntityDTOs(pods []*api.Pod) ([]
 	return result, nil
 }
 
-func (builder *applicationEntityDTOBuilder) getCommoditiesSold(appId string, index int, vpod *metrics.Pod) ([]*proto.CommodityDTO, error) {
+func (builder *applicationEntityDTOBuilder) getCommoditiesSold(appId string, index int, vpod *vcluster.Pod) ([]*proto.CommodityDTO, error) {
 	var result []*proto.CommodityDTO
-	usedTrans := 0
-	usedLatency := 0
+	usedTrans := float64(0.0)
+	usedLatency := float64(0.0)
+
 	// TODO: If container is not the container, should it still sell transactions and latency?
 	if index == vpod.MainContainerIdx { // && vpod.Service != nil
 		usedTrans = vpod.Transaction.Used
@@ -177,7 +179,7 @@ func (builder *applicationEntityDTOBuilder) getApplicationCommoditiesBought(appI
 	converter := NewConverter().Set(func(input float64) float64 { return input * cpuFrequency }, metrics.CPU)
 
 	// Resource commodities.
-	resourceCommoditiesBought, err := builder.getResourceCommoditiesBought(task.ApplicationType, appId, applicationResourceCommodityBought, converter, nil)
+	resourceCommoditiesBought, err := builder.getResourceCommoditiesBought(metrics.ApplicationType, appId, applicationResourceCommodityBought, converter, nil)
 	if err != nil {
 		return nil, err
 	}

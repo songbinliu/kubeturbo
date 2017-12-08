@@ -237,7 +237,7 @@ func (worker *k8sDiscoveryWorker) buildDTOs(currTask *task.Task) ([]*proto.Entit
 	glog.V(3).Infof("Worker %s builds %d container entityDTOs.", worker.id, len(containerDTOs))
 
 	//4. build entityDTOs for applications
-	applicationEntityDTOBuilder := dtofactory.NewApplicationEntityDTOBuilder(worker.sink)
+	applicationEntityDTOBuilder := dtofactory.NewApplicationEntityDTOBuilder(worker.sink, currTask.VCluster())
 	appEntityDTOs, err := applicationEntityDTOBuilder.BuildEntityDTOs(pods)
 	if err != nil {
 		glog.Errorf("Error while creating application entityDTOs: %v", err)

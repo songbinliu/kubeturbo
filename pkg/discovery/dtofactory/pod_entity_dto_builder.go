@@ -8,7 +8,6 @@ import (
 	"github.com/turbonomic/kubeturbo/pkg/discovery/dtofactory/property"
 	"github.com/turbonomic/kubeturbo/pkg/discovery/metrics"
 	"github.com/turbonomic/kubeturbo/pkg/discovery/stitching"
-	"github.com/turbonomic/kubeturbo/pkg/discovery/task"
 	"github.com/turbonomic/kubeturbo/pkg/discovery/util"
 
 	sdkbuilder "github.com/turbonomic/turbo-go-sdk/pkg/builder"
@@ -120,7 +119,7 @@ func (builder *podEntityDTOBuilder) BuildEntityDTOs(pods []*api.Pod) ([]*proto.E
 // get cpu frequency
 func (builder *podEntityDTOBuilder) getNodeCPUFrequency(pod *api.Pod) (float64, error) {
 	key := util.NodeKeyFromPodFunc(pod)
-	cpuFrequencyUID := metrics.GenerateEntityStateMetricUID(task.NodeType, key, metrics.CpuFrequency)
+	cpuFrequencyUID := metrics.GenerateEntityStateMetricUID(metrics.NodeType, key, metrics.CpuFrequency)
 	cpuFrequencyMetric, err := builder.metricsSink.GetMetric(cpuFrequencyUID)
 	if err != nil {
 		err := fmt.Errorf("Failed to get cpu frequency from sink for node %s: %v", key, err)
@@ -145,7 +144,7 @@ func (builder *podEntityDTOBuilder) getPodCommoditiesSold(pod *api.Pod, cpuFrequ
 	attributeSetter.Add(func(commBuilder *sdkbuilder.CommodityDTOBuilder) { commBuilder.Resizable(false) }, metrics.CPU, metrics.Memory)
 
 	// Resource Commodities
-	resourceCommoditiesSold, err := builder.getResourceCommoditiesSold(task.PodType, key, podResourceCommoditySold, converter, attributeSetter)
+	resourceCommoditiesSold, err := builder.getResourceCommoditiesSold(metrics.PodType, key, podResourceCommoditySold, converter, attributeSetter)
 	if err != nil {
 		return nil, err
 	}
@@ -178,7 +177,7 @@ func (builder *podEntityDTOBuilder) getPodCommoditiesBought(pod *api.Pod, cpuFre
 	//attributeSetter.Add(func(commBuilder *sdkbuilder.CommodityDTOBuilder) { commBuilder.Resizable(true) }, metrics.CPU, metrics.Memory)
 
 	// Resource Commodities.
-	resourceCommoditiesBought, err := builder.getResourceCommoditiesBought(task.PodType, key, podResourceCommodityBought, converter, nil)
+	resourceCommoditiesBought, err := builder.getResourceCommoditiesBought(metrics.PodType, key, podResourceCommodityBought, converter, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -208,7 +207,7 @@ func (builder *podEntityDTOBuilder) getPodCommoditiesBought(pod *api.Pod, cpuFre
 	}
 
 	// Cluster commodity.
-	clusterMetricUID := metrics.GenerateEntityStateMetricUID(task.ClusterType, "", metrics.Cluster)
+	clusterMetricUID := metrics.GenerateEntityStateMetricUID(metrics.ClusterType, "", metrics.Cluster)
 	clusterInfo, err := builder.metricsSink.GetMetric(clusterMetricUID)
 	if err != nil {
 		glog.Errorf("Failed to get %s used for current Kubernetes Cluster %s", metrics.Cluster, clusterInfo)

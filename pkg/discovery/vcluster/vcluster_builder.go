@@ -6,15 +6,20 @@ import (
 
 	"github.com/turbonomic/kubeturbo/pkg/cluster"
 	"github.com/turbonomic/kubeturbo/pkg/discovery/monitoring/istio"
-	"github.com/turbonomic/kubeturbo/pkg/discovery/monitoring/kubelet"
+
+	// TODO: because of import cycleing, cannot import kubelet now.
+	//"github.com/turbonomic/kubeturbo/pkg/discovery/monitoring/kubelet"
 
 	api "k8s.io/client-go/pkg/api/v1"
 )
 
 type VClusterBuilderConfig struct {
-	// all this three should be thread-safe, and will be shared by multiple VClusterBuilder-s
+	// all these three should be thread-safe, and will be shared by multiple VClusterBuilder-s
 	TopoGetter            *cluster.ClusterScraper
-	ContainerMetricGetter *kubelet.KubeletClient
+
+	//TODO: delete discovery/worker, and then define it with kubelet.kubeletClient
+	//ContainerMetricGetter *kubelet.KubeletClient
+	ContainerMetricGetter interface {}
 	AppMetricGetter       *istio.AppMetricClient
 }
 
@@ -23,16 +28,19 @@ type VClusterBuilder struct {
 	UUID string
 
 	TopoGetter            *cluster.ClusterScraper
-	ContainerMetricGetter *kubelet.KubeletClient
+	//ContainerMetricGetter *kubelet.KubeletClient
+	ContainerMetricGetter interface{}
+
 	AppMetricGetter       *istio.AppMetricClient
 
 	cluster *VirtualCluster
 }
 
 func NewVClusterBuilderConfig(k8sClient *cluster.ClusterScraper,
-	containerMetricClient *kubelet.KubeletClient,
+	containerMetricClient interface{},
 	appMetricClient *istio.AppMetricClient) *VClusterBuilderConfig {
-	return &VClusterBuilder{
+
+	return &VClusterBuilderConfig{
 		TopoGetter:            k8sClient,
 		ContainerMetricGetter: containerMetricClient,
 		AppMetricGetter:       appMetricClient,

@@ -56,6 +56,11 @@ func (t *Task) PodList() []*api.Pod {
 	return t.podList
 }
 
+// Get vcluster
+func (t *Task) VCluster() *vcluster.VirtualCluster {
+	return t.vCluster
+}
+
 // A TaskResult contains a state, indicate whether the task is finished successfully; a err if there is any; a list of
 // EntityDTO.
 type TaskResult struct {

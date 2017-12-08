@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/golang/glog"
 
-	"github.com/turbonomic/kubeturbo/pkg/discovery/metrics"
+	"github.com/turbonomic/kubeturbo/pkg/discovery/vcluster"
 	"github.com/turbonomic/kubeturbo/pkg/discovery/util"
 	sdkbuilder "github.com/turbonomic/turbo-go-sdk/pkg/builder"
 	"github.com/turbonomic/turbo-go-sdk/pkg/proto"
@@ -15,14 +15,14 @@ const (
 )
 
 type ServiceEntityDTOBuilder struct {
-	vcluster *metrics.VirtualCluster
+	vcluster *vcluster.VirtualCluster
 }
 
 type VAppEntityDTOBuilder struct {
-	vcluster *metrics.VirtualCluster
+	vcluster *vcluster.VirtualCluster
 }
 
-func NewVAppEntityDTOBuilder(vc *metrics.VirtualCluster) *VAppEntityDTOBuilder {
+func NewVAppEntityDTOBuilder(vc *vcluster.VirtualCluster) *VAppEntityDTOBuilder {
 	return &VAppEntityDTOBuilder{
 		vcluster: vc,
 	}
@@ -72,7 +72,7 @@ func (builder *VAppEntityDTOBuilder) BuildEntityDTO() ([]*proto.EntityDTO, error
 	return result, nil
 }
 
-func (builder *VAppEntityDTOBuilder) getCommoditiesBought(ebuilder *sdkbuilder.EntityDTOBuilder, vapp *metrics.VirtualApp) error {
+func (builder *VAppEntityDTOBuilder) getCommoditiesBought(ebuilder *sdkbuilder.EntityDTOBuilder, vapp *vcluster.VirtualApp) error {
 	if len(vapp.Pods) < 1 {
 		err := fmt.Errorf("Failed to create commoditiesBought for Service[%s]: it is not associated with any pod.", vapp.FullName)
 		glog.Error(err.Error())
@@ -116,7 +116,7 @@ func (builder *VAppEntityDTOBuilder) getCommoditiesBought(ebuilder *sdkbuilder.E
 }
 
 // it will sell Transaction and Latency, for monitoring only.
-func (builder *VAppEntityDTOBuilder) getCommoditiesSold(vapp *metrics.VirtualApp) ([]*proto.CommodityDTO, error) {
+func (builder *VAppEntityDTOBuilder) getCommoditiesSold(vapp *vcluster.VirtualApp) ([]*proto.CommodityDTO, error) {
 	result := []*proto.CommodityDTO{}
 	svcId := vapp.UUID
 

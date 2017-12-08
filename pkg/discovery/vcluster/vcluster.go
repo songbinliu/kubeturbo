@@ -95,11 +95,13 @@ type VirtualCluster struct {
 
 func NewCluster(name, uid string) *VirtualCluster {
 	return &VirtualCluster{
-		ObjectMeta.Name: name,
-		ObjectMeta.UUID: uid,
+		ObjectMeta: ObjectMeta{
+			Name: name,
+			UUID: uid,
+		},
 		Nodes:           make(map[string]*VNode),
 		Pods:            make(map[string]*Pod),
-		Services:        []*VirtualApp{},
+		Services:        make(map[string]*VirtualApp),
 	}
 }
 
@@ -164,8 +166,9 @@ func (vc *VirtualCluster) ConnectPodVapp(podName string, vapp *VirtualApp) error
 		glog.Errorf("Potential bug: pod[%v] is associated with multiple services.", pod.FullName)
 
 		if len(pod.Service.Pods) == 1 {
-			glog.Errorf("Won't associate pod[%v] to service[%v]", pod.FullName, pod.Service.FullName)
-			return
+			err := fmt.Errorf("Won't associate pod[%v] to service[%v]", pod.FullName, pod.Service.FullName)
+			glog.Errorf(err.Error())
+			return err
 		} else {
 			pod.Service.DeletePod(pod)
 		}
@@ -218,7 +221,7 @@ func (vc *VirtualCluster) SetCapacity() {
 		vapp.SetCapacity()
 	}
 
-	return nil
+	return
 }
 
 func (vc *VirtualCluster) SetAppMetric(podMetrics, svcMetrics istio.MetricSet) error {
@@ -273,9 +276,11 @@ func (vc *VirtualCluster) SetContainerMetric() error {
 
 func NewVNode(node *api.Node, clusterId string) *VNode {
 	return &VNode{
-		ObjectMeta.Name: node.Name,
-		ObjectMeta.UUID: node.UID,
-		ObjectMeta.Kind: "vnode",
+		ObjectMeta: ObjectMeta{
+			Name: node.Name,
+			UUID: string(node.UID),
+			Kind: "vnode",
+		},
 		ClusterId:       clusterId,
 		Pods:            make(map[string]*Pod),
 		Detail:          node,
@@ -294,17 +299,19 @@ func (vn *VNode) SetCapacity() error {
 	}
 
 	res := vn.Detail.Status.Allocatable
-	vn.Memory.Capacity = res.Memory().Value()
-	vn.CPU.Capacity = res.Cpu().MilliValue()
+	vn.Memory.Capacity = float64(res.Memory().Value())
+	vn.CPU.Capacity = float64(res.Cpu().MilliValue())
 	return nil
 }
 
 func NewPod(d *api.Pod) *Pod {
 	return &Pod{
-		ObjectMeta.Name:      d.Name,
-		ObjectMeta.Namespace: d.Namespace,
-		ObjectMeta.UUID:      d.UID,
-		ObjectMeta.Kind:      "pod",
+		ObjectMeta: ObjectMeta{
+			Name: d.Name,
+			Namespace: d.Namespace,
+			UUID: string(d.UID),
+			Kind: "pod",
+		},
 		FullName:             genFullName(d.Namespace, d.Name),
 		Detail:               d,
 		MainContainerIdx:     0,
@@ -335,8 +342,8 @@ func (pod *Pod) SetCapacity(node *VNode) error {
 		container := &containers[i]
 
 		req := container.Resources.Requests
-		pod.Memory.Reserved += req.Memory().Value()
-		pod.CPU.Reserved += req.Cpu().MilliValue()
+		pod.Memory.Reserved += float64(req.Memory().Value())
+		pod.CPU.Reserved += float64(req.Cpu().MilliValue())
 	}
 
 	return nil
@@ -354,10 +361,12 @@ func NewVirtualApp(svc *api.Service) *VirtualApp {
 	}
 
 	return &VirtualApp{
-		ObjectMeta.Name:      svc.Name,
-		ObjectMeta.Namespace: svc.Namespace,
-		ObjectMeta.UUID:      svc.UID,
-		ObjectMeta.Kind:      "service",
+		ObjectMeta: ObjectMeta{
+			Name:      svc.Name,
+			Namespace: svc.Namespace,
+			UUID:      string(svc.UID),
+			Kind:      "service",
+		},
 		FullName:             genFullName(svc.Namespace, svc.Name),
 		Ports:                ports,
 		Pods:                 make(map[string]*Pod),
@@ -370,8 +379,8 @@ func (vapp *VirtualApp) SetCapacity() {
 		return
 	}
 
-	totalTrans := 0
-	totalLatency := 0
+	totalTrans := float64(0.0)
+	totalLatency := float64(0.0)
 	for _, pod := range vapp.Pods {
 		totalTrans += pod.Transaction.Capacity
 		if totalLatency < 0.0001 || totalLatency > pod.Latency.Capacity {

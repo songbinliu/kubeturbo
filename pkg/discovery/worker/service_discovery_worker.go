@@ -5,7 +5,7 @@ import (
 	"github.com/golang/glog"
 
 	"github.com/turbonomic/kubeturbo/pkg/discovery/dtofactory"
-	"github.com/turbonomic/kubeturbo/pkg/discovery/metrics"
+	"github.com/turbonomic/kubeturbo/pkg/discovery/vcluster"
 	"github.com/turbonomic/kubeturbo/pkg/discovery/task"
 
 	"github.com/turbonomic/turbo-go-sdk/pkg/proto"
@@ -17,10 +17,10 @@ const (
 
 type k8sServiceDiscoveryWorker struct {
 	id       string
-	vCluster *metrics.VirtualCluster
+	vCluster *vcluster.VirtualCluster
 }
 
-func NewK8sServiceDiscoveryWorker(vc *metrics.VirtualCluster) (*k8sServiceDiscoveryWorker, error) {
+func NewK8sServiceDiscoveryWorker(vc *vcluster.VirtualCluster) (*k8sServiceDiscoveryWorker, error) {
 	return &k8sServiceDiscoveryWorker{
 		id:       k8sSvcDiscWorkerID,
 		vCluster: vc,

@@ -9,7 +9,7 @@ import (
 
 	"github.com/turbonomic/kubeturbo/pkg/cluster"
 	"github.com/turbonomic/kubeturbo/pkg/discovery/configs"
-	"github.com/turbonomic/kubeturbo/pkg/discovery/metrics"
+	"github.com/turbonomic/kubeturbo/pkg/discovery/vcluster"
 	"github.com/turbonomic/kubeturbo/pkg/discovery/worker"
 	"github.com/turbonomic/kubeturbo/pkg/discovery/worker/compliance"
 	"github.com/turbonomic/kubeturbo/pkg/registration"
@@ -43,7 +43,7 @@ func NewDiscoveryConfig(kubeClient *kubeClient.Clientset, probeConfig *configs.P
 
 type K8sDiscoveryClient struct {
 	config          *DiscoveryClientConfig
-	vcBuilderConfig *metrics.VClusterBuilderConfig
+	vcBuilderConfig *vcluster.VClusterBuilderConfig
 
 	dispatcher      *worker.Dispatcher
 	resultCollector *worker.ResultCollector
@@ -51,7 +51,7 @@ type K8sDiscoveryClient struct {
 	wg sync.WaitGroup
 }
 
-func NewK8sDiscoveryClient(config *DiscoveryClientConfig, vcBuilderConfig *metrics.VClusterBuilderConfig) *K8sDiscoveryClient {
+func NewK8sDiscoveryClient(config *DiscoveryClientConfig, vcBuilderConfig *vcluster.VClusterBuilderConfig) *K8sDiscoveryClient {
 	// make maxWorkerCount of result collector twice the worker count.
 	resultCollector := worker.NewResultCollector(workerCount * 2)
 
@@ -129,7 +129,7 @@ func (dc *K8sDiscoveryClient) discoverWithNewFramework() ([]*proto.EntityDTO, er
 	result := []*proto.EntityDTO{}
 
 	//1. build the virtual cluster with metrics
-	vclusterBuilder := metrics.NewVCluterBuilder(dc.vcBuilderConfig)
+	vclusterBuilder := vcluster.NewVCluterBuilder(dc.vcBuilderConfig)
 	vclusterBuilder.SetNameId("unknown-cluster", "unknown-Id")
 	vcluster, err := vclusterBuilder.BuildCluster()
 	if err != nil {
