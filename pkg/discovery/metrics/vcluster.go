@@ -63,6 +63,7 @@ type Pod struct {
 	//TODO: There will be error if the Pod is associated with multiple services.
 	// This is because the transactions monitored by Service does not know who is the provider.
 	Service *VirtualApp
+	MainContainerIdx int
 }
 
 type VirtualApp struct {
@@ -149,6 +150,7 @@ func (vc *VirtualCluster) AddVirtualApp(vapp *VirtualApp) error {
 }
 
 func (vc *VirtualCluster) ConnectPodVapp(podName string, vapp *VirtualApp) error {
+	//1. find the pod in the cluster
 	pod, exist := vc.Pods[podName]
 	if !exist {
 		err := fmt.Errorf("Failed to connect pod[%v] to vapp[%v], pod does not exist.", podName, vapp.FullName)
@@ -156,6 +158,7 @@ func (vc *VirtualCluster) ConnectPodVapp(podName string, vapp *VirtualApp) error
 		return err
 	}
 
+	//2. check whether this pod is already associcated with a service
 	// TODO: This will be problem when the pod is associated with multiple services.
 	if pod.Service != nil {
 		glog.Errorf("Potential bug: pod[%v] is associated with multiple services.", pod.FullName)
@@ -170,6 +173,19 @@ func (vc *VirtualCluster) ConnectPodVapp(podName string, vapp *VirtualApp) error
 
 	pod.Service = vapp
 	vapp.AddPod(pod)
+
+	//3. find the main container of the pod
+	if pod.Detail == nil {
+		glog.Warningf("Pod's detail is empty.")
+		return nil
+	}
+
+	containers := pod.Detail.Spec.Containers
+	pod.MainContainerIdx = findContainerIndex(containers, vapp.Ports)
+	if pod.MainContainerIdx < 0 {
+		glog.Warningf("Failed to find the main container of pod[%v], use the first one")
+		pod.MainContainerIdx = 0
+	}
 	return nil
 }
 
@@ -291,6 +307,7 @@ func NewPod(d *api.Pod) *Pod {
 		ObjectMeta.Kind: "pod",
 		FullName: genFullName(d.Namespace, d.Name),
 		Detail: d,
+		MainContainerIdx: 0,
 	}
 }
 
@@ -376,4 +393,29 @@ func (vapp *VirtualApp) DeletePod(pod *Pod) {
 
 func genFullName(namespace, name string) string {
 	return fmt.Sprintf("%v/%v", namespace, name)
+}
+
+// find the index of the containers of a Pod, which exposes web service on the ports
+// by port
+func findContainerIndex(containers []api.Container, ports map[int]struct{}) int {
+	found := false
+	idx := - 1
+	for i := range containers {
+		container := &containers[i]
+
+		for _, port := range container.Ports {
+			rport := int(port.ContainerPort)
+			if _, exist := ports[rport]; exist {
+				found = true
+				break
+			}
+		}
+
+		if found {
+			idx = i
+			break
+		}
+	}
+
+	return idx
 }

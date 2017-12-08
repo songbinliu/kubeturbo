@@ -15,15 +15,15 @@ import (
 	"github.com/turbonomic/turbo-go-sdk/pkg/proto"
 )
 
-const (
-	defaultTransactionCapacity float64 = 500.0
-)
+/*
+*  Application will sell:
+        (1) Transactions and ResponseTime(Latency);
+
+   Application will buy:
+        (1) VMem, VCPU, and Application(binding it to container)
+*/
 
 var (
-	applicationResourceCommoditySold = []metrics.ResourceType{
-		metrics.Transaction,
-	}
-
 	applicationResourceCommodityBought = []metrics.ResourceType{
 		metrics.CPU,
 		metrics.Memory,
@@ -56,60 +56,6 @@ func (builder *applicationEntityDTOBuilder) getNodeCPUFrequency(pod *api.Pod) (f
 	return cpuFrequency, nil
 }
 
-func (builder *applicationEntityDTOBuilder) InjectAppMetrics(pod *api.Pod) error {
-	//1. find the service
-	fullName := util.PodKeyFunc(pod)
-	vpod, exist := builder.vcluster.Pods[fullName];
-	if !exist {
-		err := fmt.Errorf("Cannot find pod[%v] from vcluster.")
-		glog.Errorf(err.Error())
-		return err
-	}
-
-	if vpod.Service == nil {
-		glog.V(3).Infof("pod[%v] is not assoicated with a service.", fullName)
-		return nil
-	}
-
-	//2. find the container by port
-	ports := vpod.Service.Ports
-
-	found := false
-	idx := - 1
-	containers := pod.Spec.Containers
-	for i := range containers {
-		container := &containers[i]
-
-		for _, port := range container.Ports {
-			rport := int(port.ContainerPort)
-			if _, exist := ports[rport]; exist {
-				found = true
-				break
-			}
-		}
-
-		if found {
-			idx = i
-			break
-		}
-	}
-
-	if !found {
-		glog.Errorf("Cannot determine Pod[%s] container providing service for service[%++v]", fullName, vpod.Service)
-		idx = 0
-		return nil
-	}
-
-	//3. inject the metrics
-	// TODO: continue
-	podId := string(pod.UID)
-	containerId := util.ContainerIdFunc(podId, idx)
-	appId := util.ApplicationIdFunc(containerId)
-
-
-	return nil
-}
-
 func (builder *applicationEntityDTOBuilder) BuildEntityDTOs(pods []*api.Pod) ([]*proto.EntityDTO, error) {
 	var result []*proto.EntityDTO
 
@@ -118,6 +64,15 @@ func (builder *applicationEntityDTOBuilder) BuildEntityDTOs(pods []*api.Pod) ([]
 		nodeCPUFrequency, err := builder.getNodeCPUFrequency(pod)
 		if err != nil {
 			glog.Errorf("failed to build ContainerDTOs for pod[%s]: %v", podFullName, err)
+			continue
+		}
+
+		vpod, exist := builder.vcluster.Pods[podFullName];
+		if !exist {
+			err := fmt.Errorf("Potential bug: cannot find pod[%v] from vcluster.")
+			glog.Errorf(err.Error())
+			glog.Errorf("Failed to build EntityDTOs for pod[%v]'s containers.", podFullName)
+			//vpod = nil
 			continue
 		}
 
@@ -132,8 +87,8 @@ func (builder *applicationEntityDTOBuilder) BuildEntityDTOs(pods []*api.Pod) ([]
 			ebuilder := sdkbuilder.NewEntityDTOBuilder(proto.EntityDTO_APPLICATION, appId).
 				DisplayName(displayName)
 
-			//2. sold commodities: transaction
-			commoditiesSold, err := builder.getCommoditiesSold(appId, i, pod)
+			//2. sold commodities: transaction & latency
+			commoditiesSold, err := builder.getCommoditiesSold(appId, i, vpod)
 			if err != nil {
 				glog.Errorf("Failed to create Application(%s) entityDTO: %v", displayName, err)
 				continue
@@ -175,62 +130,37 @@ func (builder *applicationEntityDTOBuilder) BuildEntityDTOs(pods []*api.Pod) ([]
 	return result, nil
 }
 
-func (builder *applicationEntityDTOBuilder) getTransactionUsedValue(pod *api.Pod) float64 {
-	key := util.PodKeyFunc(pod)
-	etype := task.PodType
-	rtype := metrics.Transaction
-	mtype := metrics.Used
-	metricsId := metrics.GenerateEntityResourceMetricUID(etype, key, rtype, mtype)
-
-	usedMetric, err := builder.metricsSink.GetMetric(metricsId)
-	if err != nil {
-		glog.V(3).Infof("failed to get Pod[%s] transaction usage: %v", key, err)
-		return 0.0
-	}
-
-	return usedMetric.GetValue().(float64)
-}
-
-// equally distribute Pod.Transaction.used to the hosted containers.
-func (builder *applicationEntityDTOBuilder) getAppTransactionUsage(index int, pod *api.Pod) float64 {
-	podTransactionUsage := builder.getTransactionUsedValue(pod)
-	containerNum := len(pod.Spec.Containers)
-
-	// case1: if there is only one container, then it has all the transactions.
-	if containerNum < 2 {
-		return podTransactionUsage
-	}
-
-	// case2: equally distribute transactions, the first container may have a little more
-	if containerNum < index {
-		glog.Errorf("potential bug: pod[%s] containerNum mismatch %d Vs. %d.", util.PodKeyFunc(pod), containerNum, index)
-		return 0.0
-	}
-
-	share := float64(int64(podTransactionUsage) / int64(containerNum))
-	if index == 0 {
-		residue := (podTransactionUsage - (share * float64(containerNum)))
-		share += residue
-	}
-
-	return share
-}
-
-// applicationEntity only sells transaction
-func (builder *applicationEntityDTOBuilder) getCommoditiesSold(appId string, index int, pod *api.Pod) ([]*proto.CommodityDTO, error) {
+func (builder *applicationEntityDTOBuilder) getCommoditiesSold(appId string, index int, vpod *metrics.Pod) ([]*proto.CommodityDTO, error) {
 	var result []*proto.CommodityDTO
+	usedTrans := 0
+	usedLatency := 0
+	// TODO: If container is not the container, should it still sell transactions and latency?
+	if index == vpod.MainContainerIdx { // && vpod.Service != nil
+		usedTrans = vpod.Transaction.Used
+		usedLatency = vpod.Latency.Used
+	}
 
-	appTransactionUsed := builder.getAppTransactionUsage(index, pod)
+	//1. transaction per second
 	ebuilder := sdkbuilder.NewCommodityDTOBuilder(proto.CommodityDTO_TRANSACTION).Key(appId).
-		Capacity(defaultTransactionCapacity).
-		Used(appTransactionUsed)
-
+		Capacity(vpod.Transaction.Capacity).
+		Used(usedTrans)
 	tranCommodity, err := ebuilder.Create()
 	if err != nil {
-		glog.Errorf("Failed to get application(%s) commodities sold:%v", appId, err)
-		return nil, err
+		glog.Errorf("Failed to create Transaction commodity for App(%v-%d) for selling: %v", vpod.FullName, index, err)
+		return result, err
 	}
 	result = append(result, tranCommodity)
+
+	//2. latency
+	ebuilder2 := sdkbuilder.NewCommodityDTOBuilder(proto.CommodityDTO_RESPONSE_TIME).Key(appId).
+		Capacity(vpod.Latency.Capacity).
+		Used(usedLatency)
+	latencyCommodity, err := ebuilder2.Create()
+	if err != nil {
+		glog.Errorf("Failed to create Latency commodity for App(%v-%d) for selling: %v", vpod.FullName, index, err)
+		return result, err
+	}
+	result = append(result, latencyCommodity)
 
 	return result, nil
 }
