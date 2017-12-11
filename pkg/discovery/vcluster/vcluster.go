@@ -186,7 +186,7 @@ func (vc *VirtualCluster) ConnectPodVapp(podName string, vapp *VirtualApp) error
 	containers := pod.Detail.Spec.Containers
 	pod.MainContainerIdx = findContainerIndex(containers, vapp.Ports)
 	if pod.MainContainerIdx < 0 {
-		glog.Warningf("Failed to find the main container of pod[%v], use the first one")
+		glog.Warningf("Failed to find the main container of pod[%v], use the first one", pod.FullName)
 		pod.MainContainerIdx = 0
 	}
 	return nil
@@ -224,31 +224,6 @@ func (vc *VirtualCluster) SetCapacity() {
 	return
 }
 
-func adjustPodAppCapacity(pod *Pod) {
-	if pod.Transaction.Capacity < pod.Transaction.Used {
-		glog.Warningf("Pod(%v)'s transaction (%+v) Capacity is less than Used, adjusting it", pod.FullName, pod.Transaction)
-		pod.Transaction.Capacity = pod.Transaction.Used
-	}
-	if pod.Latency.Capacity < pod.Latency.Used {
-		glog.Warningf("Pod(%v)'s latency (%+v) Capacity is less than Used, adjusting it", pod.FullName, pod.Latency)
-		pod.Latency.Capacity = pod.Latency.Used
-	}
-	return
-}
-
-func adjustServiceAppCapacity(vapp *VirtualApp) {
-	// adjust the capacity: make sure used is no bigger than capaciy
-	//TODO: a better way to set the capacity
-	if vapp.Transaction.Capacity < vapp.Transaction.Used {
-		glog.Warningf("Vapp(%v)'s transaction (%+v) Capacity is less than Used, adjusting it", vapp.FullName, vapp.Transaction)
-		vapp.Transaction.Capacity = vapp.Transaction.Used
-	}
-	if vapp.Latency.Capacity < vapp.Latency.Used {
-		glog.Warningf("Vapp(%v)'s latency (%+v) Capacity is less than Used, adjusting it", vapp.FullName, vapp.Latency)
-		vapp.Latency.Capacity = vapp.Latency.Used
-	}
-	return
-}
 
 func (vc *VirtualCluster) SetAppMetric(podMetrics, svcMetrics istio.MetricSet) error {
 	glog.V(2).Infof("Got %d Pod metrics, %d Service metrics", len(podMetrics), len(svcMetrics))
@@ -458,4 +433,30 @@ func findContainerIndex(containers []api.Container, ports map[int]struct{}) int 
 	}
 
 	return idx
+}
+
+// adjust the capacity: make sure used is no bigger than capacity
+func adjustPodAppCapacity(pod *Pod) {
+	if pod.Transaction.Capacity < pod.Transaction.Used {
+		glog.Warningf("Pod(%v)'s transaction (%+v) Capacity is less than Used, adjusting it", pod.FullName, pod.Transaction)
+		pod.Transaction.Capacity = pod.Transaction.Used
+	}
+	if pod.Latency.Capacity < pod.Latency.Used {
+		glog.Warningf("Pod(%v)'s latency (%+v) Capacity is less than Used, adjusting it", pod.FullName, pod.Latency)
+		pod.Latency.Capacity = pod.Latency.Used
+	}
+	return
+}
+
+func adjustServiceAppCapacity(vapp *VirtualApp) {
+	//TODO: a better way to set the capacity
+	if vapp.Transaction.Capacity < vapp.Transaction.Used {
+		glog.Warningf("Vapp(%v)'s transaction (%+v) Capacity is less than Used, adjusting it", vapp.FullName, vapp.Transaction)
+		vapp.Transaction.Capacity = vapp.Transaction.Used
+	}
+	if vapp.Latency.Capacity < vapp.Latency.Used {
+		glog.Warningf("Vapp(%v)'s latency (%+v) Capacity is less than Used, adjusting it", vapp.FullName, vapp.Latency)
+		vapp.Latency.Capacity = vapp.Latency.Used
+	}
+	return
 }
