@@ -224,6 +224,32 @@ func (vc *VirtualCluster) SetCapacity() {
 	return
 }
 
+func adjustPodAppCapacity(pod *Pod) {
+	if pod.Transaction.Capacity < pod.Transaction.Used {
+		glog.Warningf("Pod(%v)'s transaction (%+v) Capacity is less than Used, adjusting it", pod.FullName, pod.Transaction)
+		pod.Transaction.Capacity = pod.Transaction.Used
+	}
+	if pod.Latency.Capacity < pod.Latency.Used {
+		glog.Warningf("Pod(%v)'s latency (%+v) Capacity is less than Used, adjusting it", pod.FullName, pod.Latency)
+		pod.Latency.Capacity = pod.Latency.Used
+	}
+	return
+}
+
+func adjustServiceAppCapacity(vapp *VirtualApp) {
+	// adjust the capacity: make sure used is no bigger than capaciy
+	//TODO: a better way to set the capacity
+	if vapp.Transaction.Capacity < vapp.Transaction.Used {
+		glog.Warningf("Vapp(%v)'s transaction (%+v) Capacity is less than Used, adjusting it", vapp.FullName, vapp.Transaction)
+		vapp.Transaction.Capacity = vapp.Transaction.Used
+	}
+	if vapp.Latency.Capacity < vapp.Latency.Used {
+		glog.Warningf("Vapp(%v)'s latency (%+v) Capacity is less than Used, adjusting it", vapp.FullName, vapp.Latency)
+		vapp.Latency.Capacity = vapp.Latency.Used
+	}
+	return
+}
+
 func (vc *VirtualCluster) SetAppMetric(podMetrics, svcMetrics istio.MetricSet) error {
 	glog.V(2).Infof("Got %d Pod metrics, %d Service metrics", len(podMetrics), len(svcMetrics))
 
@@ -236,6 +262,8 @@ func (vc *VirtualCluster) SetAppMetric(podMetrics, svcMetrics istio.MetricSet) e
 			if vapp, exist := vc.Services[k]; exist {
 				vapp.Transaction.Used = v.RequestPerSecond
 				vapp.Latency.Used = v.Latency
+
+				adjustServiceAppCapacity(vapp)
 				counter++
 			}
 		}
@@ -254,6 +282,9 @@ func (vc *VirtualCluster) SetAppMetric(podMetrics, svcMetrics istio.MetricSet) e
 			pod.Transaction.Used = v.RequestPerSecond
 			pod.Latency.Used = v.Latency
 			counter++
+
+			// adjust the capacity: make sure used is no bigger than capaciy
+			adjustPodAppCapacity(pod)
 		}
 	}
 	glog.V(2).Infof("Add app metrics for [%d/%d] Pods.", counter, len(vc.Pods))
