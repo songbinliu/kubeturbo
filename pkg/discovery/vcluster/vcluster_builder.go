@@ -15,11 +15,11 @@ import (
 
 type VClusterBuilderConfig struct {
 	// all these three should be thread-safe, and will be shared by multiple VClusterBuilder-s
-	TopoGetter            *cluster.ClusterScraper
+	TopoGetter *cluster.ClusterScraper
 
 	//TODO: delete discovery/worker, and then define it with kubelet.kubeletClient
 	//ContainerMetricGetter *kubelet.KubeletClient
-	ContainerMetricGetter interface {}
+	ContainerMetricGetter interface{}
 	AppMetricGetter       *istio.AppMetricClient
 }
 
@@ -27,11 +27,11 @@ type VClusterBuilder struct {
 	Name string
 	UUID string
 
-	TopoGetter            *cluster.ClusterScraper
+	TopoGetter *cluster.ClusterScraper
 	//ContainerMetricGetter *kubelet.KubeletClient
 	ContainerMetricGetter interface{}
 
-	AppMetricGetter       *istio.AppMetricClient
+	AppMetricGetter *istio.AppMetricClient
 
 	cluster *VirtualCluster
 }

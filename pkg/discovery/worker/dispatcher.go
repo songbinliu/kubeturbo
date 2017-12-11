@@ -7,8 +7,8 @@ import (
 	api "k8s.io/client-go/pkg/api/v1"
 
 	"github.com/turbonomic/kubeturbo/pkg/discovery/configs"
-	"github.com/turbonomic/kubeturbo/pkg/discovery/vcluster"
 	"github.com/turbonomic/kubeturbo/pkg/discovery/task"
+	"github.com/turbonomic/kubeturbo/pkg/discovery/vcluster"
 
 	"github.com/golang/glog"
 	"github.com/turbonomic/kubeturbo/pkg/cluster"

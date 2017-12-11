@@ -99,9 +99,9 @@ func NewCluster(name, uid string) *VirtualCluster {
 			Name: name,
 			UUID: uid,
 		},
-		Nodes:           make(map[string]*VNode),
-		Pods:            make(map[string]*Pod),
-		Services:        make(map[string]*VirtualApp),
+		Nodes:    make(map[string]*VNode),
+		Pods:     make(map[string]*Pod),
+		Services: make(map[string]*VirtualApp),
 	}
 }
 
@@ -224,7 +224,6 @@ func (vc *VirtualCluster) SetCapacity() {
 	return
 }
 
-
 func (vc *VirtualCluster) SetAppMetric(podMetrics, svcMetrics istio.MetricSet) error {
 	glog.V(2).Infof("Got %d Pod metrics, %d Service metrics", len(podMetrics), len(svcMetrics))
 
@@ -287,9 +286,9 @@ func NewVNode(node *api.Node, clusterId string) *VNode {
 			UUID: string(node.UID),
 			Kind: "vnode",
 		},
-		ClusterId:       clusterId,
-		Pods:            make(map[string]*Pod),
-		Detail:          node,
+		ClusterId: clusterId,
+		Pods:      make(map[string]*Pod),
+		Detail:    node,
 	}
 }
 
@@ -313,14 +312,14 @@ func (vn *VNode) SetCapacity() error {
 func NewPod(d *api.Pod) *Pod {
 	return &Pod{
 		ObjectMeta: ObjectMeta{
-			Name: d.Name,
+			Name:      d.Name,
 			Namespace: d.Namespace,
-			UUID: string(d.UID),
-			Kind: "pod",
+			UUID:      string(d.UID),
+			Kind:      "pod",
 		},
-		FullName:             genFullName(d.Namespace, d.Name),
-		Detail:               d,
-		MainContainerIdx:     0,
+		FullName:         genFullName(d.Namespace, d.Name),
+		Detail:           d,
+		MainContainerIdx: 0,
 	}
 }
 
@@ -373,9 +372,9 @@ func NewVirtualApp(svc *api.Service) *VirtualApp {
 			UUID:      string(svc.UID),
 			Kind:      "service",
 		},
-		FullName:             genFullName(svc.Namespace, svc.Name),
-		Ports:                ports,
-		Pods:                 make(map[string]*Pod),
+		FullName: genFullName(svc.Namespace, svc.Name),
+		Ports:    ports,
+		Pods:     make(map[string]*Pod),
 	}
 }
 

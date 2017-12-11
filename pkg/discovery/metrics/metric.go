@@ -23,7 +23,6 @@ const (
 	ContainerType   DiscoveredEntityType = "Container"
 	ApplicationType DiscoveredEntityType = "Application"
 	ServiceType     DiscoveredEntityType = "Service"
-
 )
 
 type DiscoveredEntityType string

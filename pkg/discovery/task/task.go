@@ -10,10 +10,10 @@ import (
 )
 
 const (
-
 	TaskSucceeded TaskResultState = "Succeeded"
 	TaskFailed    TaskResultState = "Failed"
 )
+
 type TaskResultState string
 
 type Task struct {

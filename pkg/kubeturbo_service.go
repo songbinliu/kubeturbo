@@ -8,8 +8,8 @@ import (
 
 	"github.com/turbonomic/kubeturbo/pkg/action"
 	"github.com/turbonomic/kubeturbo/pkg/cluster"
-	"github.com/turbonomic/kubeturbo/pkg/discovery/vcluster"
 	discutil "github.com/turbonomic/kubeturbo/pkg/discovery/util"
+	"github.com/turbonomic/kubeturbo/pkg/discovery/vcluster"
 	turboscheduler "github.com/turbonomic/kubeturbo/pkg/scheduler"
 	"github.com/turbonomic/kubeturbo/pkg/turbostore"
 

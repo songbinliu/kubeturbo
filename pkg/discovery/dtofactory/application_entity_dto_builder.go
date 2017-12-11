@@ -8,8 +8,8 @@ import (
 
 	"github.com/turbonomic/kubeturbo/pkg/discovery/dtofactory/property"
 	"github.com/turbonomic/kubeturbo/pkg/discovery/metrics"
-	"github.com/turbonomic/kubeturbo/pkg/discovery/vcluster"
 	"github.com/turbonomic/kubeturbo/pkg/discovery/util"
+	"github.com/turbonomic/kubeturbo/pkg/discovery/vcluster"
 
 	sdkbuilder "github.com/turbonomic/turbo-go-sdk/pkg/builder"
 	"github.com/turbonomic/turbo-go-sdk/pkg/proto"
@@ -42,7 +42,7 @@ type applicationEntityDTOBuilder struct {
 func NewApplicationEntityDTOBuilder(sink *metrics.EntityMetricSink, vc *vcluster.VirtualCluster) *applicationEntityDTOBuilder {
 	return &applicationEntityDTOBuilder{
 		generalBuilder: newGeneralBuilder(sink),
-		vCluster: vc,
+		vCluster:       vc,
 	}
 }
 

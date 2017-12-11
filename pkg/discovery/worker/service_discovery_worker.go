@@ -5,8 +5,8 @@ import (
 	"github.com/golang/glog"
 
 	"github.com/turbonomic/kubeturbo/pkg/discovery/dtofactory"
-	"github.com/turbonomic/kubeturbo/pkg/discovery/vcluster"
 	"github.com/turbonomic/kubeturbo/pkg/discovery/task"
+	"github.com/turbonomic/kubeturbo/pkg/discovery/vcluster"
 
 	"github.com/turbonomic/turbo-go-sdk/pkg/proto"
 )
