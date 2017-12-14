@@ -291,19 +291,6 @@ func (r *ContainerResizer) resizeControllerContainer(pod *k8sapi.Pod, parentKind
 	glog.V(3).Infof("resizeContainer [%s]: got lock for parent[%s]", id, parentName)
 	helper.KeepRenewLock()
 
-	// Performs operations for actions to be non-disruptive (when the pod is the only one for the controller)
-	// NOTE: It doesn't support the case of the pod associated to Deployment in version lower than 1.6.0.
-	//       In such case, the action execution will fail.
-	contKind, contName, err := util.GetPodGrandInfo(r.kubeClient, pod)
-	nonDisruptiveHelper := NewNonDisruptiveHelper(r.kubeClient, pod.Namespace, contKind, contName, pod.Name)
-
-	// Performs operations for non-disruptive resize actions
-	if err := nonDisruptiveHelper.OperateForNonDisruption(); err != nil {
-		glog.V(3).Infof("resizeContainer failed[%s]: failed to perform non-disruptive operations", id)
-		return err
-	}
-	defer nonDisruptiveHelper.CleanUp()
-
 	//3. defer function for cleanUp
 	defer func() {
 		helper.CleanUp()
