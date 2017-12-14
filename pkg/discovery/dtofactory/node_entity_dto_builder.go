@@ -209,5 +209,5 @@ func getNodeIPs(node *api.Node) []string {
 	for i := range addrs {
 		result = append(result, addrs[i].Address)
 	}
-	return  result
+	return result
 }

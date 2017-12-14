@@ -87,7 +87,7 @@ func (r *ReScheduler) getNodeByName(hostSE *proto.EntityDTO) (*api.Node, error) 
 	node, err := util.GetNodeFromProperties(r.kubeClient, hostSE.GetEntityProperties())
 	if err == nil {
 		glog.V(3).Infof("Got node(%v) from Properites.", node.Name)
-		return node
+		return node, nil
 	}
 
 	glog.Warningf("Failed to get node from Properities, try to get node by display name...")
@@ -134,7 +134,6 @@ func (r *ReScheduler) getNode(action *proto.ActionItemDTO) (*api.Node, error) {
 			glog.Error(err.Error())
 			return nil, err
 		}
-
 
 		node, err = util.GetNodebyIP(r.kubeClient, machineIPs)
 	} else {

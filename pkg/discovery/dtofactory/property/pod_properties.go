@@ -11,10 +11,10 @@ const (
 	// TODO currently in the server side only properties in "DEFAULT" namespaces are respected. Ideally we should use "Kubernetes-Pod".
 	k8sPropertyNamespace = "DEFAULT"
 
-	k8sNamespace         = "KubernetesNamespace"
-	k8sPodName           = "KubernetesPodName"
-	k8sNodeName          = "KubernetesNodeName"
-	k8sContainerIndex    = "Kubernetes-Container-Index"
+	k8sNamespace      = "KubernetesNamespace"
+	k8sPodName        = "KubernetesPodName"
+	k8sNodeName       = "KubernetesNodeName"
+	k8sContainerIndex = "Kubernetes-Container-Index"
 )
 
 // Build entity properties of a pod. The properties are consisted of name and namespace of a pod.
