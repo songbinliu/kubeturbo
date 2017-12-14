@@ -19,18 +19,17 @@ func BuildNodeProperties(node *api.Node) *proto.EntityDTO_EntityProperty {
 }
 
 // Get node name from entity property.
-func GetNodeNameFromProperty(properties []*proto.EntityDTO_EntityProperty) (nodeName string) {
+func GetNodeNameFromProperty(properties []*proto.EntityDTO_EntityProperty) string {
 	if properties == nil {
-		return
+		return ""
 	}
 	for _, property := range properties {
-		if property.GetNamespace() != k8sNamespace {
+		if property.GetNamespace() != k8sPropertyNamespace {
 			continue
 		}
 		if property.GetName() == k8sNodeName {
-			nodeName = property.GetValue()
-			return
+			return property.GetValue()
 		}
 	}
-	return
+	return ""
 }

@@ -10,6 +10,7 @@ import (
 const (
 	// TODO currently in the server side only properties in "DEFAULT" namespaces are respected. Ideally we should use "Kubernetes-Pod".
 	k8sPropertyNamespace = "DEFAULT"
+
 	k8sNamespace         = "KubernetesNamespace"
 	k8sPodName           = "KubernetesPodName"
 	k8sNodeName          = "KubernetesNodeName"

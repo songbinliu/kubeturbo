@@ -162,10 +162,33 @@ func GetNodebyIP(kubeClient *client.Clientset, machineIPs []string) (*api.Node, 
 	return nil, fmt.Errorf("Cannot find node with IPs %s", ipAddresses)
 }
 
+// try to get k8s.node by nodeName
+func GetNodebyName(kubeClient *client.Clientset, nodeName string) (*api.Node, error) {
+	node, err := kubeClient.CoreV1().Nodes().Get(nodeName, metav1.ListOptions{})
+	if err != nil {
+		glog.Errorf("Failed to get node(%v): %v", nodeName, err)
+		return nil, err
+	}
+
+	return node, nil
+}
+
+func GetNodeFromProperties(kubeClient *client.Clientset, properties []*proto.EntityDTO_EntityProperty) (*api.Node, error) {
+	name := property.GetNodeNameFromProperty(properties)
+	if len(name) < 1 {
+		err := fmt.Errorf("cannot found node name from properites: %++v", properties)
+		glog.Error(err)
+		return nil, err
+	}
+
+	return GetNodebyName(kubeClient, name)
+}
+
 // Iterate all nodes to find the name of the node which has the provided IP address.
 func GetNodebyUUID(kubeClient *client.Clientset, uuid string) (*api.Node, error) {
 	allNodes, err := GetAllNodes(kubeClient)
 	if err != nil {
+		glog.Errorf("Failed to list nodes: %v", err)
 		return nil, err
 	}
 
@@ -178,6 +201,7 @@ func GetNodebyUUID(kubeClient *client.Clientset, uuid string) (*api.Node, error)
 
 	return nil, fmt.Errorf("Cannot find node with UUID %s", uuid)
 }
+
 
 // Get a pod based on received entity properties.
 func GetPodFromProperties(kubeClient *client.Clientset, entityType proto.EntityDTO_EntityType,

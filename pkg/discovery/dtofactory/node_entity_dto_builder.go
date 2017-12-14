@@ -84,10 +84,10 @@ func (builder *nodeEntityDTOBuilder) BuildEntityDTOs(nodes []*api.Node) ([]*prot
 		// power state.
 		entityDTOBuilder = entityDTOBuilder.WithPowerState(proto.EntityDTO_POWERED_ON)
 
-		//vmdata := &proto.EntityDTO_VirtualMachineData{
-		//	IpAddress: getNodeIPs(node),
-		//}
-		//entityDTOBuilder = entityDTOBuilder.VirtualMachineData(vmdata)
+		vmdata := &proto.EntityDTO_VirtualMachineData{
+			IpAddress: getNodeIPs(node),
+		}
+		entityDTOBuilder = entityDTOBuilder.VirtualMachineData(vmdata)
 
 		// build entityDTO.
 		entityDto, err := entityDTOBuilder.Create()

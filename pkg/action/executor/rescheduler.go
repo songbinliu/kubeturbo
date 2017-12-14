@@ -83,6 +83,18 @@ func (r *ReScheduler) checkActionItem(action *proto.ActionItemDTO) error {
 	return nil
 }
 
+func (r *ReScheduler) getNodeByName(hostSE *proto.EntityDTO) (*api.Node, error) {
+	node, err := util.GetNodeFromProperties(r.kubeClient, hostSE.GetEntityProperties())
+	if err == nil {
+		glog.V(3).Infof("Got node(%v) from Properites.", node.Name)
+		return node
+	}
+
+	glog.Warningf("Failed to get node from Properities, try to get node by display name...")
+	name := hostSE.GetDisplayName()
+	return util.GetNodebyName(r.kubeClient, name)
+}
+
 // get k8s.nodeName of the node
 // TODO: get node info via EntityProperty
 func (r *ReScheduler) getNode(action *proto.ActionItemDTO) (*api.Node, error) {
@@ -93,6 +105,15 @@ func (r *ReScheduler) getNode(action *proto.ActionItemDTO) (*api.Node, error) {
 	var err error = nil
 	var node *api.Node = nil
 
+	//1. try to get node by name
+	node, err = r.getNodeByName(hostSE)
+	if err != nil {
+		glog.Warningf("Failed to get node by name: %v", err)
+	} else {
+		return node, nil
+	}
+
+	//2. try to get node by UUID or IP
 	if r.stitchType == stitching.UUID {
 		node, err = util.GetNodebyUUID(r.kubeClient, hostSE.GetId())
 	} else if r.stitchType == stitching.IP {
@@ -105,17 +126,22 @@ func (r *ReScheduler) getNode(action *proto.ActionItemDTO) (*api.Node, error) {
 				return nil, err
 			}
 			machineIPs = vmData.GetIpAddress()
+			if len(machineIPs) < 1 {
+				glog.Warningf("machine IPs are empty: %++v", vmData)
+			}
 		} else {
 			err := fmt.Errorf("Unable to get IP of physicalMachine[%v] service entity.", hostSE.GetDisplayName())
 			glog.Error(err.Error())
 			return nil, err
 		}
 
+
 		node, err = util.GetNodebyIP(r.kubeClient, machineIPs)
 	} else {
 		err = fmt.Errorf("Unknown stitching type: %v", r.stitchType)
 	}
 
+	//3. error
 	if err != nil {
 		err = fmt.Errorf("failed to find hosting node[%v]: %v", hostSE.GetDisplayName(), err)
 		glog.Error(err.Error())
