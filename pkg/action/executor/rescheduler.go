@@ -87,6 +87,8 @@ func (r *ReScheduler) checkActionItem(action *proto.ActionItemDTO) error {
 // TODO: get node info via EntityProperty
 func (r *ReScheduler) getNode(action *proto.ActionItemDTO) (*api.Node, error) {
 	hostSE := action.GetNewSE()
+	glog.V(2).Infof("Action: %++v", action)
+	glog.V(2).Infof("HostSE: %++v", hostSE)
 
 	var err error = nil
 	var node *api.Node = nil

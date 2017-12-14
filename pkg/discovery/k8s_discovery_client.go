@@ -125,6 +125,15 @@ func (dc *K8sDiscoveryClient) Discover(accountValues []*proto.AccountValue) (*pr
 	return discoveryResponse, nil
 }
 
+func forDebug(dtos []*proto.EntityDTO) {
+	for i := range dtos {
+		if dtos[i].GetEntityType() == proto.EntityDTO_VIRTUAL_MACHINE {
+			glog.V(2).Infof("[%s]:\n %++v", dtos[i].GetDisplayName(), dtos[i])
+			continue
+		}
+	}
+}
+
 func (dc *K8sDiscoveryClient) discoverWithNewFramework() ([]*proto.EntityDTO, error) {
 	result := []*proto.EntityDTO{}
 
@@ -147,6 +156,8 @@ func (dc *K8sDiscoveryClient) discoverWithNewFramework() ([]*proto.EntityDTO, er
 	workerCount := dc.dispatcher.Dispatch(nodes, vcluster)
 	entityDTOs := dc.resultCollector.Collect(workerCount)
 	glog.V(2).Infof("Discovery workers have finished discovery work with %d entityDTOs built. Now performing service discovery...", len(entityDTOs))
+
+	forDebug(entityDTOs)
 
 	//2.2 add affinity/anti-affinity commodities
 	glog.V(2).Infof("begin to process affinity.")
