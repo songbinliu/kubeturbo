@@ -18,7 +18,7 @@ package main
 
 import (
 	"flag"
-	"github.com/golang/glog"
+	"fmt"
 	"runtime"
 
 	"github.com/turbonomic/kubeturbo/cmd/kubeturbo/app"
@@ -26,7 +26,7 @@ import (
 
 func main() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
-	glog.V(2).Infof("*** Run Kubeturbo service ***")
+	fmt.Println("*** Run Kubeturbo service ***")
 
 	s := app.NewVMTServer()
 	s.AddFlags()
