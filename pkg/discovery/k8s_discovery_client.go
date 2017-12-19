@@ -135,7 +135,7 @@ func forDebug(dtos []*proto.EntityDTO) {
 }
 
 func printItems(dtos []*proto.EntityDTO) {
-	if glog.V(3) {
+	if glog.V(2) {
 		for i := range dtos {
 			glog.V(3).Infof("[%s] %++v", dtos[i].GetDisplayName(), dtos[i])
 		}
