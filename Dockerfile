@@ -1,11 +1,10 @@
-# Set the base image
 FROM alpine:3.3
 
-# Set the file maintainer
-MAINTAINER Dongyi Yang <dongyi.yang@vmturbo.com>
+MAINTAINER Enlin Xu <enlin.xu@turbonomic.com>
 
 RUN apk --update upgrade && apk add ca-certificates && update-ca-certificates
 COPY ./_output/kubeturbo.linux /bin/kubeturbo 
+RUN chmod +x /bin/kubeturbo
 
 ENTRYPOINT ["/bin/kubeturbo"]
 

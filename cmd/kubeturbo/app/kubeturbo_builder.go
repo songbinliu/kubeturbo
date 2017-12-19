@@ -1,6 +1,7 @@
 package app
 
 import (
+	"flag"
 	"fmt"
 	"net"
 	"net/http"
@@ -26,11 +27,10 @@ import (
 	"github.com/turbonomic/kubeturbo/pkg/discovery/monitoring/master"
 	"github.com/turbonomic/kubeturbo/pkg/discovery/stitching"
 	"github.com/turbonomic/kubeturbo/pkg/turbostore"
-	"github.com/turbonomic/kubeturbo/test/flag"
+	myflag "github.com/turbonomic/kubeturbo/test/flag"
 
 	"github.com/golang/glog"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/spf13/pflag"
 )
 
 const (
@@ -80,22 +80,20 @@ func NewVMTServer() *VMTServer {
 }
 
 // AddFlags adds flags for a specific VMTServer to the specified FlagSet
-func (s *VMTServer) AddFlags(fs *pflag.FlagSet) {
-	fs.IntVar(&s.Port, "port", s.Port, "The port that kubeturbo's http service runs on")
-	fs.StringVar(&s.Address, "ip", s.Address, "the ip address that kubeturbo's http service runs on")
-	fs.IntVar(&s.CAdvisorPort, "cadvisor-port", K8sCadvisorPort, "The port of the cadvisor service runs on")
-	fs.StringVar(&s.Master, "master", s.Master, "The address of the Kubernetes API server (overrides any value in kubeconfig)")
-	fs.StringVar(&s.K8sTAPSpec, "turboconfig", s.K8sTAPSpec, "Path to the config file.")
-	fs.StringVar(&s.TestingFlagPath, "testingflag", s.TestingFlagPath, "Path to the testing flag.")
-	fs.StringVar(&s.KubeConfig, "kubeconfig", s.KubeConfig, "Path to kubeconfig file with authorization and master location information.")
-	fs.BoolVar(&s.EnableProfiling, "profiling", false, "Enable profiling via web interface host:port/debug/pprof/.")
-	fs.BoolVar(&s.UseVMWare, "usevmware", false, "If the underlying infrastructure is VMWare.")
-	fs.UintVar(&s.KubeletPort, "kubelet-port", kubelet.DefaultKubeletPort, "The port of the kubelet runs on")
-	fs.BoolVar(&s.EnableKubeletHttps, "kubelet-https", kubelet.DefaultKubeletHttps, "Indicate if Kubelet is running on https server")
-	fs.StringVar(&s.K8sVersion, "k8sVersion", executor.HigherK8sVersion, "the kubernetes server version; for openshift, it is the underlying Kubernetes' version.")
-	fs.StringVar(&s.NoneSchedulerName, "noneSchedulerName", executor.DefaultNoneExistSchedulerName, "a none-exist scheduler name, to prevent controller to create Running pods during move Action.")
-
-	//leaderelection.BindFlags(&s.LeaderElection, fs)
+func (s *VMTServer) AddFlags() {
+	flag.IntVar(&s.Port, "port", s.Port, "The port that kubeturbo's http service runs on")
+	flag.StringVar(&s.Address, "ip", s.Address, "the ip address that kubeturbo's http service runs on")
+	flag.IntVar(&s.CAdvisorPort, "cadvisor-port", K8sCadvisorPort, "The port of the cadvisor service runs on")
+	flag.StringVar(&s.Master, "master", s.Master, "The address of the Kubernetes API server (overrides any value in kubeconfig)")
+	flag.StringVar(&s.K8sTAPSpec, "turboconfig", s.K8sTAPSpec, "Path to the config file.")
+	flag.StringVar(&s.TestingFlagPath, "testingflag", s.TestingFlagPath, "Path to the testing flag.")
+	flag.StringVar(&s.KubeConfig, "kubeconfig", s.KubeConfig, "Path to kubeconfig file with authorization and master location information.")
+	flag.BoolVar(&s.EnableProfiling, "profiling", false, "Enable profiling via web interface host:port/debug/pprof/.")
+	flag.BoolVar(&s.UseVMWare, "usevmware", false, "If the underlying infrastructure is VMWare.")
+	flag.UintVar(&s.KubeletPort, "kubelet-port", kubelet.DefaultKubeletPort, "The port of the kubelet runs on")
+	flag.BoolVar(&s.EnableKubeletHttps, "kubelet-https", kubelet.DefaultKubeletHttps, "Indicate if Kubelet is running on https server")
+	flag.StringVar(&s.K8sVersion, "k8sVersion", executor.HigherK8sVersion, "the kubernetes server version; for openshift, it is the underlying Kubernetes' version.")
+	flag.StringVar(&s.NoneSchedulerName, "noneSchedulerName", executor.DefaultNoneExistSchedulerName, "a none-exist scheduler name, to prevent controller to create Running pods during move Action.")
 }
 
 // create an eventRecorder to send events to Kubernetes APIserver
@@ -184,7 +182,7 @@ func (s *VMTServer) checkFlag() error {
 	}
 
 	if s.TestingFlagPath != "" {
-		flag.SetPath(s.TestingFlagPath)
+		myflag.SetPath(s.TestingFlagPath)
 	}
 
 	ip := net.ParseIP(s.Address)
@@ -196,7 +194,7 @@ func (s *VMTServer) checkFlag() error {
 }
 
 // Run runs the specified VMTServer.  This should never exit.
-func (s *VMTServer) Run(_ []string) error {
+func (s *VMTServer) Run() error {
 	if err := s.checkFlag(); err != nil {
 		glog.Errorf("check flag failed:%v. abort.", err.Error())
 		os.Exit(1)

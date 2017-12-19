@@ -17,15 +17,11 @@ limitations under the License.
 package main
 
 import (
+	"flag"
+	"github.com/golang/glog"
 	"runtime"
 
-	"k8s.io/apiserver/pkg/util/flag"
-	"k8s.io/kubernetes/pkg/util/logs"
-
 	"github.com/turbonomic/kubeturbo/cmd/kubeturbo/app"
-
-	"github.com/golang/glog"
-	"github.com/spf13/pflag"
 )
 
 func main() {
@@ -33,11 +29,8 @@ func main() {
 	glog.V(2).Infof("*** Run Kubeturbo service ***")
 
 	s := app.NewVMTServer()
-	s.AddFlags(pflag.CommandLine)
-	flag.InitFlags()
+	s.AddFlags()
+	flag.Parse()
 
-	logs.InitLogs()
-	defer logs.FlushLogs()
-
-	s.Run(pflag.CommandLine.Args())
+	s.Run()
 }
