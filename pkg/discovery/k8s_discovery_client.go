@@ -134,6 +134,14 @@ func forDebug(dtos []*proto.EntityDTO) {
 	}
 }
 
+func printItems(dtos []*proto.EntityDTO) {
+	if glog.V(3) {
+		for i := range dtos {
+			glog.V(3).Infof("[%s] %++v", dtos[i].GetDisplayName(), dtos[i])
+		}
+	}
+}
+
 func (dc *K8sDiscoveryClient) discoverWithNewFramework() ([]*proto.EntityDTO, error) {
 	result := []*proto.EntityDTO{}
 
@@ -179,6 +187,7 @@ func (dc *K8sDiscoveryClient) discoverWithNewFramework() ([]*proto.EntityDTO, er
 		entityDTOs = append(entityDTOs, svcDiscResult.Content()...)
 	}
 
+	printItems(entityDTOs)
 	glog.V(2).Infof("There are %d entityDTOs.", len(entityDTOs))
 
 	return entityDTOs, nil
