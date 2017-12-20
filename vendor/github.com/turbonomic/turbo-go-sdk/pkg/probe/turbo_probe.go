@@ -122,7 +122,7 @@ func (theProbe *TurboProbe) ValidateTarget(accountValues []*proto.AccountValue) 
 	}
 
 	var validationResponse *proto.ValidationResponse
-	glog.V(3).Infof("Send validation request to handler %s", handler)
+	glog.V(3).Infof("Send validation request to handler %++v", handler)
 	validationResponse, err := handler.Validate(accountValues)
 
 	// TODO: if the handler is nil, implies the target is added from the UI
@@ -142,7 +142,7 @@ func (theProbe *TurboProbe) ValidateTarget(accountValues []*proto.AccountValue) 
 func (theProbe *TurboProbe) ExecuteAction(actionExecutionDTO *proto.ActionExecutionDTO, accountValues []*proto.AccountValue,
 	progressTracker ActionProgressTracker) *proto.ActionResult {
 	if theProbe.ActionClient == nil {
-		glog.V(3).Infof("ActionClient not defined for Probe %s", theProbe.ProbeType)
+		glog.V(3).Infof("ActionClient not defined for Probe %+v", theProbe.ProbeType)
 		return theProbe.createActionErrorDTO("ActionClient not defined for Probe " + theProbe.ProbeType)
 	}
 	glog.V(3).Infof("Execute Action for Target: %s", accountValues)
