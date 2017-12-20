@@ -30,7 +30,7 @@ func (tapService *TAPService) DisconnectFromTurbo() {
 }
 func (tapService *TAPService) ConnectToTurbo() {
 	glog.V(4).Infof("[ConnectToTurbo] Enter ******* ")
-	IsRegistered := make(chan bool, 1)
+	IsRegistered := make(chan bool)
 
 	// start a separate go routine to connect to the Turbo server
 	go mediationcontainer.InitMediationContainer(IsRegistered)

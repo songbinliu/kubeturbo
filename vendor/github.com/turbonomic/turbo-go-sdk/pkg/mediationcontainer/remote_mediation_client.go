@@ -88,7 +88,7 @@ func (remoteMediationClient *remoteMediationClient) Init(probeRegisteredMsgCh ch
 	// -------- Start protocol handler separate thread
 	// Initiate protocol to connect to server
 	glog.V(2).Infof("Start sdk client protocol ........")
-	sdkProtocolDoneCh := make(chan bool, 1) // TODO: using a channel so we can add timeout or
+	sdkProtocolDoneCh := make(chan bool) // TODO: using a channel so we can add timeout or
 	// wait till message is received from the Protocol handler
 	go sdkProtocolHandler.handleClientProtocol(remoteMediationClient.Transport, sdkProtocolDoneCh)
 
@@ -145,10 +145,10 @@ func (remoteMediationClient *remoteMediationClient) Init(probeRegisteredMsgCh ch
 	go remoteMediationClient.RunServerMessageHandler(remoteMediationClient.Transport)
 
 	// Send registration status to the upper layer
-	defer close(probeRegisteredMsgCh)
+	//defer close(probeRegisteredMsgCh)
 	defer close(sdkProtocolDoneCh)
 	probeRegisteredMsgCh <- status
-	glog.V(3).Infof("Sent registration status on channel %s\n", probeRegisteredMsgCh)
+	glog.V(3).Infof("Sent registration status on channel: %v", status)
 
 	glog.V(3).Infof("Remote mediation initialization complete")
 	// --------- Wait for exit notification
