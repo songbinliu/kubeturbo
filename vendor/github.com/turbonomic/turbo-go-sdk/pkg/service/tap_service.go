@@ -49,7 +49,7 @@ func (tapService *TAPService) ConnectToTurbo() {
 		glog.V(4).Infof("Now adding target %v", target)
 		resp, err := tapService.AddTarget(target)
 		if err != nil {
-			glog.Errorf("Error while adding %s %s target: %s", targetInfo.TargetCategory(),
+			glog.Errorf("Error while adding %s %s target: %v", targetInfo.TargetCategory(),
 				targetInfo.TargetType(), err)
 			// TODO, do we want to return an error?
 			continue

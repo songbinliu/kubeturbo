@@ -207,7 +207,7 @@ func (remoteMediationClient *remoteMediationClient) RunServerMessageHandler(tran
 				glog.Errorf(logPrefix + "endpoint message channel is closed")
 				break // return or continue ?
 			}
-			glog.V(3).Infof(logPrefix+"received: %++v\n", parsedMsg)
+			glog.V(3).Infof(logPrefix+"received: %+++v\n", parsedMsg)
 
 			// Handler response - find the handler to handle the message
 			serverRequest := parsedMsg.ServerMsg

@@ -117,7 +117,7 @@ func (clientProtocol *SdkClientProtocol) HandleRegistration(transport ITransport
 		endpoint.CloseEndpoint()
 		return false
 	}
-	glog.V(2).Infof("[HandleRegistration] [%s] : Received: %++v\n", endpoint.GetName(), serverMsg)
+	glog.V(2).Infof("[HandleRegistration] [%s] : Received: %+++v\n", endpoint.GetName(), serverMsg)
 
 	// Handler response
 	registrationResponse := protoMsg.RegistrationMsg
@@ -134,7 +134,7 @@ func (clientProtocol *SdkClientProtocol) MakeContainerInfo() (*proto.ContainerIn
 	var probes []*proto.ProbeInfo
 
 	for k, v := range clientProtocol.allProbes {
-		glog.V(2).Infof("SdkClientProtocol] Creating Probe Info for", k)
+		glog.V(2).Infof("SdkClientProtocol] Creating Probe Info for: %++v", k)
 		turboProbe := v.Probe
 		var probeInfo *proto.ProbeInfo
 		var err error
