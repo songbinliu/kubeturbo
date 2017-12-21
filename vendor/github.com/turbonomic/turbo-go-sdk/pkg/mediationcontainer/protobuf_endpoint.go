@@ -76,7 +76,7 @@ func (nr *NegotiationResponse) GetMessage() goproto.Message {
 }
 
 func (nr *NegotiationResponse) parse(rawMsg []byte) (*ParsedMessage, error) {
-	glog.V(2).Infof("Parsing %s\n", rawMsg)
+	glog.V(2).Infof("Parsing %++v\n", rawMsg)
 	// Parse the input stream
 	serverMsg := &version.NegotiationAnswer{}
 	err := goproto.Unmarshal(rawMsg, serverMsg)

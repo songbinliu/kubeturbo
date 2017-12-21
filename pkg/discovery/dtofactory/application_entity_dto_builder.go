@@ -185,7 +185,7 @@ func (builder *applicationEntityDTOBuilder) buildBuying(podId, containerId, cont
 
 	//2. build cpu commodity
 	cpuComm := buildBuyComm(cpuUsed, 0.0, proto.CommodityDTO_VCPU)
-	if cpuComm != nil {
+	if cpuComm == nil {
 		glog.Errorf("Failed to build cpu commodity for application(%v)", containerName)
 		return result, err
 	}
@@ -193,7 +193,7 @@ func (builder *applicationEntityDTOBuilder) buildBuying(podId, containerId, cont
 
 	//2. build memory commodity
 	memComm := buildBuyComm(memUsed, 0.0, proto.CommodityDTO_VMEM)
-	if memComm != nil {
+	if memComm == nil {
 		glog.Errorf("Failed to build memory commodity for application(%v)", containerName)
 		return result, err
 	}
@@ -201,7 +201,7 @@ func (builder *applicationEntityDTOBuilder) buildBuying(podId, containerId, cont
 
 	//3. build application commodity
 	appComm := buildBuyKeyComm(containerId, proto.CommodityDTO_APPLICATION)
-	if appComm != nil {
+	if appComm == nil {
 		glog.Errorf("Failed to build app commodity for application(%v)", containerName)
 		return result, err
 	}
