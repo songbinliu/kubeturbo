@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"github.com/golang/glog"
 
 	"github.com/turbonomic/turbo-api/pkg/api"
 )
@@ -49,6 +50,7 @@ func (c *Client) AddTarget(target *api.Target) (*Result, error) {
 	if err != nil {
 		return nil, fmt.Errorf("Failed to marshall target instance: %s", err)
 	}
+	glog.V(2).Infof("target: %++v", string(targetData))
 	response, err := c.Post().Resource(api.Resource_Type_Target).
 		Header("Content-Type", "application/json").
 		Header("Accept", "application/json").
@@ -57,6 +59,7 @@ func (c *Client) AddTarget(target *api.Target) (*Result, error) {
 	if err != nil {
 		return nil, fmt.Errorf("Failed to add target: %s", err)
 	}
+	glog.V(2).Infof("response: %++v", response.body)
 	if response.statusCode != 200 {
 		return nil, buildResponseError("target addition", response.status, response.body)
 	}

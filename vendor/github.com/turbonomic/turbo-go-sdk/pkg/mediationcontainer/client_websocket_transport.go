@@ -82,6 +82,9 @@ func (clientTransport *ClientWebSocketTransport) Connect() error {
 
 	clientTransport.stopListenerCh = make(chan bool, 1) // Channel to stop the routine that listens for messages
 	clientTransport.inputStreamCh = make(chan []byte)   // Message Queue
+
+	go clientTransport.KeepAlive()
+
 	// Message handler for received messages
 	clientTransport.ListenForMessages() // spawns a new routine
 	return nil
@@ -130,6 +133,32 @@ func (clientTransport *ClientWebSocketTransport) stopListenForMessages() {
 	}
 }
 
+func (client *ClientWebSocketTransport) KeepAlive() {
+	time.Sleep(time.Second*60)
+	glog.V(2).Infof("Start keep websocket alive process")
+
+	n := 0
+	dat := []byte("keep alive")
+	for {
+		n ++
+		err := websocket.Message.Send(client.ws, dat)
+		if err != nil {
+			glog.Errorf("[keep alive] Failed to send msg-%d: %v", n, err)
+		} else {
+			glog.V(2).Infof("[keep alive] sent msg-%d success.", n)
+		}
+
+		timer := time.NewTimer(time.Second * 30)
+		select {
+		case <-client.stopListenerCh:
+			glog.Errorf("[keep alive] quit now")
+			return
+		case <- timer.C:
+			glog.V(4).Info("[keep alive] another round")
+		}
+	}
+}
+
 // Routine to listen for messages on the websocket.
 // The websocket is continuously checked for messages and queued on the clientTransport.inputStream channel
 // Routine exits when a message is sent on clientTransport.stopListenerCh.
@@ -155,6 +184,7 @@ func (clientTransport *ClientWebSocketTransport) ListenForMessages() {
 				glog.V(2).Infof("[ListenForMessages]: connected, waiting for server response ...")
 				var data []byte = make([]byte, 1024)
 				err := websocket.Message.Receive(clientTransport.ws, &data)
+
 				// Notify errors and break
 				if err != nil {
 					//TODO handle err according to possible type. Now reconnect when never there is an error, which may not necessary.
@@ -173,8 +203,10 @@ func (clientTransport *ClientWebSocketTransport) ListenForMessages() {
 					break
 				}
 				// write the message on the channel
-				glog.V(3).Infof("[ListenForMessages] received message on websocket")
+				glog.V(3).Infof("[ListenForMessages] received message on websocket: (%v)", string(data))
+			    glog.V(2).Infof("begin to push to queue")
 				clientTransport.queueRawMessage(data) // Note: this will block till the message is read
+				glog.V(2).Infof("end of pushing to queue")
 				glog.V(4).Infof("[ListenForMessages] delivered websocket message, continue listening for server messages...")
 			} //end select
 		} //end for
@@ -271,6 +303,8 @@ func openWebSocketConn(connConfig *WebSocketConnectionConfig, vmtServerUrl strin
 		}
 		return nil, err
 	}
+
+	webs.MaxPayloadBytes = 1024
 
 	glog.V(2).Infof("[openWebSocketConn] created webSocket : %s+v", vmtServerUrl)
 	return webs, nil

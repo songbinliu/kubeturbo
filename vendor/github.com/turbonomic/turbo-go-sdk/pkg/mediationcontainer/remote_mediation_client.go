@@ -212,6 +212,7 @@ func (remoteMediationClient *remoteMediationClient) RunServerMessageHandler(tran
 			// Handler response - find the handler to handle the message
 			serverRequest := parsedMsg.ServerMsg
 			requestType := getRequestType(serverRequest)
+			glog.V(3).Infof(logPrefix+"received: serverRequest: %++v, %++v\n", requestType, parsedMsg.ServerMsg)
 
 			requestHandler := remoteMediationClient.MessageHandlers[requestType]
 			if requestHandler == nil {
@@ -489,5 +490,5 @@ func (intMsgHandler *InterruptMessageHandler) HandleMessage(serverRequest proto.
 	probeMsgChan chan *proto.MediationClientMessage) {
 
 	msgID := serverRequest.GetMessageID()
-	glog.V(3).Infof("Received: Interrupt Message for message ID: %d, %s\n ", msgID, serverRequest)
+	glog.V(2).Infof("Received: Interrupt Message for message ID: %d, %++v\n ", msgID, serverRequest)
 }

@@ -83,7 +83,7 @@ func (theProbe *TurboProbe) GetTurboDiscoveryClient(accountValues []*proto.Accou
 		//TODO: CreateDiscoveryClient(address, accountValues, )
 		return nil
 	}
-	glog.V(2).Infof("[GetTurboDiscoveryClient] Found Target for address: %s", address)
+	glog.V(2).Infof("[GetTurboDiscoveryClient] Found Target for address: %+++v", address)
 	return target
 }
 

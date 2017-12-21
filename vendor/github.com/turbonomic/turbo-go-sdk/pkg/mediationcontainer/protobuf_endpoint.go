@@ -58,6 +58,7 @@ func (sr *MediationRequest) GetMessage() goproto.Message {
 
 func (sr *MediationRequest) parse(rawMsg []byte) (*ParsedMessage, error) {
 	// Parse the input stream
+	glog.V(2).Infof("Parsing MediationRequest: (%++v)", string(rawMsg))
 	serverMsg := &proto.MediationServerMessage{}
 	err := goproto.Unmarshal(rawMsg, serverMsg)
 	if err != nil {
@@ -68,6 +69,7 @@ func (sr *MediationRequest) parse(rawMsg []byte) (*ParsedMessage, error) {
 	parsedMsg := &ParsedMessage{
 		ServerMsg: *serverMsg,
 	}
+	glog.V(2).Infof("MediationRequest: %+++v", serverMsg)
 	return parsedMsg, nil
 }
 
@@ -76,7 +78,7 @@ func (nr *NegotiationResponse) GetMessage() goproto.Message {
 }
 
 func (nr *NegotiationResponse) parse(rawMsg []byte) (*ParsedMessage, error) {
-	glog.V(2).Infof("Parsing %++v\n", rawMsg)
+	glog.V(2).Infof("Parsing negotiationRespone: (%++v)", string(rawMsg))
 	// Parse the input stream
 	serverMsg := &version.NegotiationAnswer{}
 	err := goproto.Unmarshal(rawMsg, serverMsg)
@@ -88,6 +90,7 @@ func (nr *NegotiationResponse) parse(rawMsg []byte) (*ParsedMessage, error) {
 	parsedMsg := &ParsedMessage{
 		NegotiationMsg: *serverMsg,
 	}
+	glog.V(2).Infof("NegotiationRespone: %++v", serverMsg)
 	return parsedMsg, nil
 }
 
@@ -96,7 +99,7 @@ func (rr *RegistrationResponse) GetMessage() goproto.Message {
 }
 
 func (rr *RegistrationResponse) parse(rawMsg []byte) (*ParsedMessage, error) {
-	glog.V(3).Infof("Parsing %s\n", rawMsg)
+	glog.V(3).Infof("Parsing registrationRespone (%++v)", string(rawMsg))
 	// Parse the input stream
 	serverMsg := &proto.Ack{}
 	err := goproto.Unmarshal(rawMsg, serverMsg)
@@ -108,5 +111,6 @@ func (rr *RegistrationResponse) parse(rawMsg []byte) (*ParsedMessage, error) {
 	parsedMsg := &ParsedMessage{
 		RegistrationMsg: *serverMsg,
 	}
+	glog.V(2).Infof("RegistrationRespone: %++v", serverMsg)
 	return parsedMsg, nil
 }
