@@ -84,7 +84,7 @@ func (builder *applicationEntityDTOBuilder) BuildEntityDTOs(pods []*api.Pod) ([]
 		podId := string(pod.UID)
 		for i := range pod.Spec.Containers {
 			//1. Id and Name
-			//container := &(pod.Spec.Containers[i])
+			container := &(pod.Spec.Containers[i])
 			containerId := util.ContainerIdFunc(podId, i)
 			appId := util.ApplicationIdFunc(containerId)
 			displayName := util.ApplicationDisplayName(podFullName)
@@ -101,7 +101,7 @@ func (builder *applicationEntityDTOBuilder) BuildEntityDTOs(pods []*api.Pod) ([]
 			ebuilder.SellsCommodities(commoditiesSold)
 
 			//3. bought commodities: vcpu/vmem/application
-			commoditiesBought, err := builder.getApplicationCommoditiesBought(appId, podFullName, containerId, nodeCPUFrequency)
+			commoditiesBought, err := builder.buildBuying(podId, containerId, container.Name, nodeCPUFrequency)
 			if err != nil {
 				glog.Errorf("Failed to create Application(%s) entityDTO: %v", displayName, err)
 				continue
@@ -173,33 +173,76 @@ func (builder *applicationEntityDTOBuilder) getCommoditiesSold(appId string, ind
 
 // Build the bought commodities by each application.
 // An application buys vCPU, vMem and Application commodity from a container.
-func (builder *applicationEntityDTOBuilder) getApplicationCommoditiesBought(appId, podName, containerId string, cpuFrequency float64) ([]*proto.CommodityDTO, error) {
-	var commoditiesBought []*proto.CommodityDTO
+func (builder *applicationEntityDTOBuilder) buildBuying(podId, containerId, containerName string, cpuFreq float64) ([]*proto.CommodityDTO, error) {
+	var result []*proto.CommodityDTO
 
-	converter := NewConverter().Set(func(input float64) float64 { return input * cpuFrequency }, metrics.CPU)
-
-	// Resource commodities.
-	resourceCommoditiesBought, err := builder.getResourceCommoditiesBought(metrics.ApplicationType, appId, applicationResourceCommodityBought, converter, nil)
+	//1. get the used cpu/memory
+	cpuUsed, memUsed, err := builder.getCPUMemoryUsed(podId, containerName, cpuFreq)
 	if err != nil {
-		return nil, err
+		glog.Errorf("Failed to get cpu/memory used for application(%v): %v", containerName, err)
+		return result, err
 	}
-	if len(resourceCommoditiesBought) != len(applicationResourceCommodityBought) {
-		err = fmt.Errorf("mismatch num of commidities (%d Vs. %d) for application:%s, %s", len(resourceCommoditiesBought), len(applicationResourceCommodityBought), podName, appId)
-		glog.Error(err)
-		//return nil, err
-	}
-	commoditiesBought = append(commoditiesBought, resourceCommoditiesBought...)
 
-	// Application commodity
-	applicationCommBought, err := sdkbuilder.NewCommodityDTOBuilder(proto.CommodityDTO_APPLICATION).
-		Key(containerId).
-		Create()
-	if err != nil {
-		return nil, err
+	//2. build cpu commodity
+	cpuComm := buildBuyComm(cpuUsed, 0.0, proto.CommodityDTO_VCPU)
+	if cpuComm != nil {
+		glog.Errorf("Failed to build cpu commodity for application(%v)", containerName)
+		return result, err
 	}
-	commoditiesBought = append(commoditiesBought, applicationCommBought)
-	return commoditiesBought, nil
+	result = append(result, cpuComm)
+
+	//2. build memory commodity
+	memComm := buildBuyComm(memUsed, 0.0, proto.CommodityDTO_VMEM)
+	if memComm != nil {
+		glog.Errorf("Failed to build memory commodity for application(%v)", containerName)
+		return result, err
+	}
+	result = append(result, memComm)
+
+	//3. build application commodity
+	appComm := buildBuyKeyComm(containerId, proto.CommodityDTO_APPLICATION)
+	if appComm != nil {
+		glog.Errorf("Failed to build app commodity for application(%v)", containerName)
+		return result, err
+	}
+	result = append(result, appComm)
+
+	return result, nil
 }
+
+
+func (builder *applicationEntityDTOBuilder) getUsed(key string, entityType metrics.DiscoveredEntityType, rtype metrics.ResourceType) (float64, error) {
+	usedMetricUID := metrics.GenerateEntityResourceMetricUID(entityType, key, rtype, metrics.Used)
+	usedMetric, err := builder.metricsSink.GetMetric(usedMetricUID)
+	if err != nil {
+		glog.Errorf("Failed to get %s used for %s %s: %v", rtype, entityType, key, err)
+		return 0, err
+	}
+	usedValue := usedMetric.GetValue().(float64)
+
+	return usedValue, nil
+}
+
+func (builder *applicationEntityDTOBuilder) getCPUMemoryUsed(podId, containerName string, cpuFreq float64) (float64, float64, error) {
+	containerId := util.ContainerStatNameFunc(podId, containerName)
+	usedId := util.ApplicationIdFunc(containerId)
+
+	cpuUsed, err := builder.getUsed(usedId, metrics.ApplicationType, metrics.CPU)
+	if err != nil {
+		glog.Errorf("Failed to get used cpu for container: %v, set to 0", usedId)
+		cpuUsed = 0
+	}
+	memUsed, err := builder.getUsed(usedId, metrics.ApplicationType, metrics.Memory)
+	if err != nil {
+		glog.Errorf("Failed to get used memory for container: %v, set to 0", usedId)
+		memUsed = 0
+	}
+
+	cpuUsed = cpuUsed * cpuFreq
+	memUsed = memUsed
+	return cpuUsed, memUsed, nil
+}
+
 
 // Get the properties of the pod. This includes property related to application cluster property.
 func (builder *applicationEntityDTOBuilder) getApplicationProperties(pod *api.Pod, index int) []*proto.EntityDTO_EntityProperty {

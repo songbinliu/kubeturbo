@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	api "k8s.io/client-go/pkg/api/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 )
 
 func GetNodeResourceRequestConsumption(pods []*api.Pod) (nodeCpuProvisionedUsedCore, nodeMemoryProvisionedUsedKiloBytes float64, err error) {
@@ -64,4 +65,15 @@ func GetCpuAndMemoryValues(resource api.ResourceList) (cpuCapacityCore, memoryCa
 	cpuCapacityCore += float64(ctnCpuCapacityMilliCore) / MilliToUnit
 
 	return
+}
+
+// cpu core time in seconds: 0.001 seconds (= 1 milliseconds)
+func UnifyCPUTime(cpu *resource.Quantity) float64 {
+	ctnCpuCapacityMilliCore := cpu.MilliValue()
+	return float64(ctnCpuCapacityMilliCore) / MilliToUnit
+}
+
+// memory amount in KB
+func UnifyMemory(mem *resource.Quantity) float64 {
+	return float64(mem.Value()) / KilobytesToBytes
 }

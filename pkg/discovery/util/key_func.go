@@ -18,8 +18,8 @@ func PodStatsKeyFunc(podStat *stats.PodStats) string {
 	return podStat.PodRef.Namespace + "/" + podStat.PodRef.Name
 }
 
-func ContainerStatNameFunc(pod *stats.PodStats, containerName string) string {
-	return PodStatsKeyFunc(pod) + "/" + containerName
+func ContainerStatNameFunc(podId string, containerName string) string {
+	return fmt.Sprintf("%s-%s", podId, containerName)
 }
 
 func PodKeyFunc(pod *api.Pod) string {
