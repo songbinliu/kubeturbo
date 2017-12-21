@@ -210,7 +210,6 @@ func (builder *applicationEntityDTOBuilder) buildBuying(podId, containerId, cont
 	return result, nil
 }
 
-
 func (builder *applicationEntityDTOBuilder) getUsed(key string, entityType metrics.DiscoveredEntityType, rtype metrics.ResourceType) (float64, error) {
 	usedMetricUID := metrics.GenerateEntityResourceMetricUID(entityType, key, rtype, metrics.Used)
 	usedMetric, err := builder.metricsSink.GetMetric(usedMetricUID)
@@ -239,10 +238,8 @@ func (builder *applicationEntityDTOBuilder) getCPUMemoryUsed(podId, containerNam
 	}
 
 	cpuUsed = cpuUsed * cpuFreq
-	memUsed = memUsed
 	return cpuUsed, memUsed, nil
 }
-
 
 // Get the properties of the pod. This includes property related to application cluster property.
 func (builder *applicationEntityDTOBuilder) getApplicationProperties(pod *api.Pod, index int) []*proto.EntityDTO_EntityProperty {

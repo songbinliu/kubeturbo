@@ -4,8 +4,8 @@ import (
 	"errors"
 	"fmt"
 
-	api "k8s.io/client-go/pkg/api/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
+	api "k8s.io/client-go/pkg/api/v1"
 )
 
 func GetNodeResourceRequestConsumption(pods []*api.Pod) (nodeCpuProvisionedUsedCore, nodeMemoryProvisionedUsedKiloBytes float64, err error) {
