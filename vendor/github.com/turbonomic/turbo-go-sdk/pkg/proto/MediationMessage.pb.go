@@ -707,6 +707,7 @@ type ProbeInfo struct {
 	// a default of 600 seconds (10 minutes) will be used. The minimum value allowed for this
 	// field is 60 seconds (1 minute).
 	RediscoveryIntervalSeconds *int32 `protobuf:"varint,6,opt,name=rediscoveryIntervalSeconds" json:"rediscoveryIntervalSeconds,omitempty"`
+	FullRediscoveryIntervalSeconds *int32 `protobuf:"varint,6,opt,name=fullRediscoveryIntervalSeconds" json:"fullRediscoveryIntervalSeconds,omitempty"`
 	// EntityIdentityMetadata supplies meta information describing the properties used to identify
 	// all of the entities that a probe may discover. There should be one EntityIdentityMetadata
 	// for each type of entity that a probe may discover.
