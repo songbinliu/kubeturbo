@@ -138,7 +138,7 @@ func (client *ClientWebSocketTransport) KeepAlive() {
 	glog.V(2).Infof("Start keep websocket alive process")
 
 	n := 0
-	dat := []byte("keep alive")
+	dat := []byte("")
 	for {
 		n ++
 		err := websocket.Message.Send(client.ws, dat)
