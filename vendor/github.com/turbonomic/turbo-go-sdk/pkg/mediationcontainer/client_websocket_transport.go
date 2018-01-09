@@ -83,7 +83,7 @@ func (clientTransport *ClientWebSocketTransport) Connect() error {
 	clientTransport.stopListenerCh = make(chan bool, 1) // Channel to stop the routine that listens for messages
 	clientTransport.inputStreamCh = make(chan []byte)   // Message Queue
 
-	go clientTransport.KeepAlive()
+	//go clientTransport.KeepAlive()
 
 	// Message handler for received messages
 	clientTransport.ListenForMessages() // spawns a new routine
@@ -182,7 +182,7 @@ func (clientTransport *ClientWebSocketTransport) ListenForMessages() {
 					continue
 				}
 				glog.V(2).Infof("[ListenForMessages]: connected, waiting for server response ...")
-				var data []byte = make([]byte, 1024)
+				var data []byte = make([]byte, 20480)
 				err := websocket.Message.Receive(clientTransport.ws, &data)
 
 				// Notify errors and break
@@ -304,7 +304,7 @@ func openWebSocketConn(connConfig *WebSocketConnectionConfig, vmtServerUrl strin
 		return nil, err
 	}
 
-	webs.MaxPayloadBytes = 1024
+	webs.MaxPayloadBytes = 40960
 
 	glog.V(2).Infof("[openWebSocketConn] created webSocket : %s+v", vmtServerUrl)
 	return webs, nil

@@ -59,7 +59,7 @@ func NewProbeInfoBuilder(probeType, probeCat string,
 		SupplyChainDefinitionSet: supplyChainSet,
 		AccountDefinition:        acctDef,
 		FullRediscoveryIntervalSeconds: &interval,
-		//RediscoveryIntervalSeconds: &interval,
+		RediscoveryIntervalSeconds: &interval,
 	}
 	return &ProbeInfoBuilder{
 		probeInfo: probeInfo,

@@ -22,7 +22,7 @@ import (
 	"github.com/turbonomic/kubeturbo/pkg/discovery/configs"
 	"github.com/turbonomic/kubeturbo/pkg/discovery/monitoring"
 	"github.com/turbonomic/kubeturbo/pkg/discovery/monitoring/istio"
-	"github.com/turbonomic/kubeturbo/pkg/discovery/monitoring/k8sconntrack"
+	//"github.com/turbonomic/kubeturbo/pkg/discovery/monitoring/k8sconntrack"
 	"github.com/turbonomic/kubeturbo/pkg/discovery/monitoring/kubelet"
 	"github.com/turbonomic/kubeturbo/pkg/discovery/monitoring/master"
 	"github.com/turbonomic/kubeturbo/pkg/discovery/stitching"
@@ -189,8 +189,8 @@ func (s *VMTServer) createProbeConfigOrDie(kubeConfig *restclient.Config, kubele
 
 	// Create K8sConntrack monitoring
 	// TODO, disable https by default. Change this when k8sconntrack supports https.
-	k8sConntrackMonitoringConfig := k8sconntrack.NewK8sConntrackMonitorConfig()
-	monitoringConfigs = append(monitoringConfigs, k8sConntrackMonitoringConfig)
+	//k8sConntrackMonitoringConfig := k8sconntrack.NewK8sConntrackMonitorConfig()
+	//monitoringConfigs = append(monitoringConfigs, k8sConntrackMonitoringConfig)
 
 	probeConfig := &configs.ProbeConfig{
 		CadvisorPort:          s.CAdvisorPort,
