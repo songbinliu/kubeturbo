@@ -31,6 +31,19 @@ func GetNodeIPForMonitor(node *api.Node, source types.MonitoringSource) (string,
 	}
 }
 
+func GetNodeIP(node *api.Node) (string, error) {
+	ip := ""
+	for _, addr := range node.Status.Addresses {
+		if addr.Type == api.NodeInternalIP && addr.Address != "" {
+			ip = addr.Address
+		}
+	}
+	if ip != "" {
+		return ip, nil
+	}
+	return "", fmt.Errorf("Node %v has no valid hostname and/or IP address: %v %v", node.Name, ip)
+}
+
 // Check if a node is in Ready status.
 func NodeIsReady(node *api.Node) bool {
 	for _, condition := range node.Status.Conditions {
