@@ -27,9 +27,9 @@ type TAPService struct {
 }
 
 func (tapService *TAPService) DisconnectFromTurbo() {
-	glog.V(4).Infof("[DisconnectFromTurbo] Enter *******")
+	glog.V(3).Infof("[DisconnectFromTurbo] Enter *******")
 	close(tapService.disconnectFromTurbo)
-	glog.V(4).Infof("[DisconnectFromTurbo] End *********")
+	glog.V(3).Infof("[DisconnectFromTurbo] End *********")
 }
 
 func (tapService *TAPService) ConnectToTurbo() {
@@ -43,8 +43,9 @@ func (tapService *TAPService) ConnectToTurbo() {
 	// Block till a message arrives on the channel
 	status := <-IsRegistered
 	if !status {
-		glog.Fatalf("Probe " + tapService.ProbeConfiguration.ProbeCategory +
+		glog.Errorf("Probe " + tapService.ProbeConfiguration.ProbeCategory +
 			"::" + tapService.ProbeConfiguration.ProbeType + " is not registered")
+		mediationcontainer.CloseMediationContainer()
 		return
 	}
 	glog.V(3).Infof("Probe " + tapService.ProbeConfiguration.ProbeCategory +

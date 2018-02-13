@@ -74,7 +74,8 @@ func InitMediationContainer(probeRegisteredMsg chan bool) {
 	glog.V(2).Infof("Registering %d probes", len(theContainer.allProbes))
 
 	remoteMediationClient := theContainer.theRemoteMediationClient
-	remoteMediationClient.Init(probeRegisteredMsg)
+	//remoteMediationClient.Init(probeRegisteredMsg)
+	remoteMediationClient.Start(probeRegisteredMsg)
 }
 
 func CloseMediationContainer() {

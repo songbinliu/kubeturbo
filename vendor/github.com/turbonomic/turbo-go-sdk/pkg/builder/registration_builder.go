@@ -123,16 +123,15 @@ func NewProbeInfoBuilder(probeType, probeCat string,
 
 // NewBasicProbeInfoBuilder builds the ProbeInfo DTO for the given probe
 func NewBasicProbeInfoBuilder(probeType, probeCat string) *ProbeInfoBuilder {
-	var full, other int32
+	var full int32
 	full = DEFAULT_FULL_DISCOVERY_IN_SECS
-	other = DISCOVERY_NOT_SUPPORTED
 
 	probeInfo := &proto.ProbeInfo{
 		ProbeType:                             &probeType,
 		ProbeCategory:                         &probeCat,
 		FullRediscoveryIntervalSeconds:        &full,
-		IncrementalRediscoveryIntervalSeconds: &other,
-		PerformanceRediscoveryIntervalSeconds: &other,
+		//IncrementalRediscoveryIntervalSeconds: nil,
+		//PerformanceRediscoveryIntervalSeconds: nil,
 	}
 	return &ProbeInfoBuilder{
 		probeInfo: probeInfo,
@@ -160,12 +159,16 @@ func (builder *ProbeInfoBuilder) WithFullDiscoveryInterval(fullDiscoveryInSecs i
 }
 
 func (builder *ProbeInfoBuilder) WithIncrementalDiscoveryInterval(incrementalDiscoveryInSecs int32) *ProbeInfoBuilder {
-	builder.probeInfo.IncrementalRediscoveryIntervalSeconds = &incrementalDiscoveryInSecs
+	if incrementalDiscoveryInSecs > 0 {
+		builder.probeInfo.IncrementalRediscoveryIntervalSeconds = &incrementalDiscoveryInSecs
+	}
 	return builder
 }
 
 func (builder *ProbeInfoBuilder) WithPerformanceDiscoveryInterval(performanceDiscoveryInSecs int32) *ProbeInfoBuilder {
-	builder.probeInfo.PerformanceRediscoveryIntervalSeconds = &performanceDiscoveryInSecs
+	if performanceDiscoveryInSecs > 0 {
+		builder.probeInfo.PerformanceRediscoveryIntervalSeconds = &performanceDiscoveryInSecs
+	}
 	return builder
 }
 

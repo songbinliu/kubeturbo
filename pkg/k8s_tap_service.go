@@ -139,6 +139,6 @@ func NewKubernetesTAPService(config *Config) (*K8sTAPService, error) {
 	return &K8sTAPService{tapService}, nil
 }
 
-func (s *K8sTAPService) Run() {
-	s.ConnectToTurbo()
-}
+//func (s *K8sTAPService) Run() {
+	//s.ConnectToTurbo()
+//}

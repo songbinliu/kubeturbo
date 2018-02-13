@@ -9,6 +9,7 @@ import (
 	"os/signal"
 	"strconv"
 	"syscall"
+	"time"
 
 	"k8s.io/apiserver/pkg/server/healthz"
 	"k8s.io/client-go/kubernetes"
@@ -218,24 +219,24 @@ func (s *VMTServer) Run(_ []string) error {
 	}
 
 	// Start the KubeTurbo TAP service
-	run := func(_ <-chan struct{}) {
+	run := func() {
 		glog.V(2).Infof("********** Start runnning Kubeturbo Service **********")
 
 		// Disconnect from Turbo server when Kubeturbo is shutdown
 		handleExit(func() { k8sTAPService.DisconnectFromTurbo() })
 
 		k8sTAPService.ConnectToTurbo()
-		select {}
+		du := time.Second * 3
+		glog.V(2).Infof("******** Kubeturbo Service is quitting, in %v seconds ...", du.Seconds())
+		//time.Sleep(du)
 	}
 
 	// The client for healthz, debug, and prometheus
 	go s.startHttp()
 
 	glog.V(2).Infof("No leader election")
-	run(nil)
-
-	glog.Fatal("this statement is unreachable")
-	panic("unreachable")
+	run()
+	return nil
 }
 
 func (s *VMTServer) startHttp() {

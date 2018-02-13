@@ -68,7 +68,7 @@ func (endpoint *ClientProtobufEndpoint) CloseEndpoint() {
 	// Send close to the listener routine
 	if endpoint.stopMsgWaitCh != nil {
 		glog.V(4).Infof("["+endpoint.Name+"] closing stopMsgWaitCh %+v", endpoint.stopMsgWaitCh)
-		endpoint.stopMsgWaitCh <- true
+		//endpoint.stopMsgWaitCh <- true
 		close(endpoint.stopMsgWaitCh)
 		glog.V(4).Infof("["+endpoint.Name+"] closed stopMsgWaitCh %+v", endpoint.stopMsgWaitCh)
 	}
@@ -104,7 +104,6 @@ func (endpoint *ClientProtobufEndpoint) waitForServerMessage() {
 			glog.V(4).Infof("["+endpoint.Name+"][waitForServerMessage] : waiting for server request at endpoint %v", endpoint)
 			select {
 			case <-endpoint.stopMsgWaitCh:
-				glog.V(4).Infof(logPrefix+" closing MessageChannel %+v", endpoint.ParsedMessageChannel)
 				close(endpoint.ParsedMessageChannel) // This listener routine is the writer for this channel
 				glog.V(4).Infof(logPrefix+" closed MessageChannel %+v", endpoint.ParsedMessageChannel)
 				return

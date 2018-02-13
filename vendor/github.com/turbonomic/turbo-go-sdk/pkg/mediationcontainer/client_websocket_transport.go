@@ -12,6 +12,7 @@ import (
 
 	"github.com/golang/glog"
 	"golang.org/x/net/websocket"
+	"sync"
 )
 
 const (
@@ -53,7 +54,8 @@ type ClientWebSocketTransport struct {
 	connConfig               *WebSocketConnectionConfig
 	inputStreamCh            chan []byte // unbuffered channel
 	closeRequested           bool
-	stopListenerCh           chan bool // buffered channel
+	stopListenerCh           chan struct{}
+	mux sync.Mutex
 	connClosedNotificationCh chan bool // channel where the transport connection error will be notified
 }
 
@@ -61,7 +63,7 @@ type ClientWebSocketTransport struct {
 func CreateClientWebSocketTransport(connConfig *WebSocketConnectionConfig) *ClientWebSocketTransport {
 	transport := &ClientWebSocketTransport{
 		connConfig:               connConfig,
-		connClosedNotificationCh: make(chan bool),
+		status: Closed,
 	}
 	return transport
 }
@@ -70,6 +72,10 @@ func CreateClientWebSocketTransport(connConfig *WebSocketConnectionConfig) *Clie
 func (clientTransport *ClientWebSocketTransport) Connect() error {
 	// Close any previous connected WebSocket connection and set current connection to nil.
 	clientTransport.closeAndResetWebSocket()
+	clientTransport.closeRequested = false
+	clientTransport.stopListenerCh = make(chan struct{}) // Channel to stop the routine that listens for messages
+	clientTransport.inputStreamCh = make(chan []byte)   // Message Queue
+	clientTransport.connClosedNotificationCh = make(chan bool)
 
 	// loop till server is up or close received
 	// TODO: give an optional timeout to wait for server in performWebSocketConnection()
@@ -80,8 +86,6 @@ func (clientTransport *ClientWebSocketTransport) Connect() error {
 
 	glog.V(4).Infof("[Connect] Connected to server " + clientTransport.GetConnectionId())
 
-	clientTransport.stopListenerCh = make(chan bool, 1) // Channel to stop the routine that listens for messages
-	clientTransport.inputStreamCh = make(chan []byte)   // Message Queue
 	// Message handler for received messages
 	clientTransport.ListenForMessages() // spawns a new routine
 	return nil
@@ -91,6 +95,10 @@ func (clientTransport *ClientWebSocketTransport) NotifyClosed() chan bool {
 	return clientTransport.connClosedNotificationCh
 }
 
+func (clientTransport *ClientWebSocketTransport) IsClosed() bool {
+	return clientTransport.status == Closed
+}
+
 func (clientTransport *ClientWebSocketTransport) GetConnectionId() string {
 	if clientTransport.status == Closed {
 		return ""
@@ -98,12 +106,24 @@ func (clientTransport *ClientWebSocketTransport) GetConnectionId() string {
 	return clientTransport.ws.RemoteAddr().String() + "::" + clientTransport.ws.LocalAddr().String()
 }
 
-// Close the WebSocket Transport point
+// Close the WebSocket Transport point, which can be called in two cases:
+//  (1) From upper layer: mediationClient stops everything;
+//  (2) From itself: the websocket connection is broken;
 func (clientTransport *ClientWebSocketTransport) CloseTransportPoint() {
+	clientTransport.mux.Lock()
+	defer clientTransport.mux.Unlock()
+	if clientTransport.closeRequested {
+		return
+	}
+
 	glog.V(4).Infof("[CloseTransportPoint] closing transport endpoint and listener routine")
 	clientTransport.closeRequested = true
-	// close listener
-	clientTransport.stopListenForMessages()
+
+	// close channels
+	close(clientTransport.stopListenerCh)
+	close(clientTransport.connClosedNotificationCh)
+	close(clientTransport.inputStreamCh)
+
 	clientTransport.closeAndResetWebSocket()
 }
 
@@ -121,14 +141,6 @@ func (clientTransport *ClientWebSocketTransport) closeAndResetWebSocket() {
 }
 
 // ================================================= Message Listener =============================================
-func (clientTransport *ClientWebSocketTransport) stopListenForMessages() {
-	if clientTransport.stopListenerCh != nil {
-		glog.V(4).Infof("[StopListenForMessages] closing stopListenerCh %+v", clientTransport.stopListenerCh)
-		clientTransport.stopListenerCh <- true
-		close(clientTransport.stopListenerCh)
-		glog.V(4).Infof("[StopListenForMessages] closed stopListenerCh %+v", clientTransport.stopListenerCh)
-	}
-}
 
 // Routine to listen for messages on the websocket.
 // The websocket is continuously checked for messages and queued on the clientTransport.inputStream channel
@@ -143,13 +155,13 @@ func (clientTransport *ClientWebSocketTransport) ListenForMessages() {
 			glog.V(4).Infof("[ListenForMessages] waiting for messages on websocket transport : %++v", clientTransport)
 			select {
 			case <-clientTransport.stopListenerCh:
-				close(clientTransport.inputStreamCh) // This listener routine is the writer for this channel
-				glog.V(4).Infof("[ListenForMessages] closed inputStreamCh %+v", clientTransport.inputStreamCh)
+				glog.V(2).Infof("[ListenForMessages] stop listen for new msg from websocket.")
 				return
 			default:
 				if clientTransport.status != Ready {
 					glog.Errorf("WebSocket transport layer status is %s", clientTransport.status)
 					glog.Errorf("WebSocket is not ready.")
+					time.Sleep(time.Second * 5)
 					continue
 				}
 				glog.V(2).Infof("[ListenForMessages]: connected, waiting for server response ...")
@@ -163,12 +175,8 @@ func (clientTransport *ClientWebSocketTransport) ListenForMessages() {
 					}
 
 					glog.Errorf("[ListenForMessages] error during receive %v", err)
-					//notify error with the connection
-					clientTransport.connClosedNotificationCh <- true // Note: this will block till the message is received
-					// close current WebSocket connection.
-					clientTransport.closeAndResetWebSocket()
-					clientTransport.stopListenForMessages()
-
+					glog.Errorf("Close websocket connection now.")
+					clientTransport.CloseTransportPoint()
 					glog.V(2).Infof("[ListenForMessages] error notified, will re-establish websocket connection")
 					break
 				}
@@ -223,11 +231,11 @@ func (clientTransport *ClientWebSocketTransport) Send(messageToSend *TransportMe
 // ====================================== Websocket Connection =========================================================
 // Establish connection to server websocket until connected or until the transport endpoint is closed
 func (clientTransport *ClientWebSocketTransport) performWebSocketConnection() error {
-	connRetryIntervalSeconds := time.Second * 30 // TODO: use ConnectionRetry parameter from the connConfig or default
+	connRetryIntervalSeconds := time.Second * 10 // TODO: use ConnectionRetry parameter from the connConfig or default
 	connConfig := clientTransport.connConfig
 	// WebSocket URL
 	vmtServerUrl := connConfig.TurboServer + connConfig.WebSocketPath
-	glog.Infof("[performWebSocketConnection]: %s", vmtServerUrl)
+	glog.V(2).Infof("[performWebSocketConnection]: %s", vmtServerUrl)
 
 	for !clientTransport.closeRequested { // only set when CloseTransportPoint() is called
 		ws, err := openWebSocketConn(connConfig, vmtServerUrl)
