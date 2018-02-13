@@ -63,7 +63,6 @@ type ClientWebSocketTransport struct {
 func CreateClientWebSocketTransport(connConfig *WebSocketConnectionConfig) *ClientWebSocketTransport {
 	transport := &ClientWebSocketTransport{
 		connConfig:               connConfig,
-		status: Closed,
 	}
 	return transport
 }
@@ -72,6 +71,7 @@ func CreateClientWebSocketTransport(connConfig *WebSocketConnectionConfig) *Clie
 func (clientTransport *ClientWebSocketTransport) Connect() error {
 	// Close any previous connected WebSocket connection and set current connection to nil.
 	clientTransport.closeAndResetWebSocket()
+	clientTransport.status = Closed
 	clientTransport.closeRequested = false
 	clientTransport.stopListenerCh = make(chan struct{}) // Channel to stop the routine that listens for messages
 	clientTransport.inputStreamCh = make(chan []byte)   // Message Queue
