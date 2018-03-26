@@ -167,6 +167,9 @@ func (builder *applicationEntityDTOBuilder) getCommoditiesSold(appId string, ind
 		return result, err
 	}
 	result = append(result, latencyCommodity)
+	if usedTrans > 0.0 || usedLatency > 0.0 {
+		glog.V(2).Infof("App(%v-%d) usedTrans=%.3f, latency=%.3f", vpod.FullName, index, usedTrans, usedLatency)
+	}
 
 	return result, nil
 }
