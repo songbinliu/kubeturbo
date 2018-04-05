@@ -12,6 +12,7 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/gorilla/websocket"
+	"sync"
 )
 
 const (
@@ -52,6 +53,7 @@ func CreateWebSocketConnectionConfig(connConfig *MediationContainerConfig) (*Web
 type ClientWebSocketTransport struct {
 	// current status of the transport layer.
 	status                   TransportStatus
+	mux        sync.Mutex
 	ws                       *websocket.Conn // created during Connect()
 	connConfig               *WebSocketConnectionConfig
 	inputStreamCh            chan []byte // unbuffered channel
@@ -87,6 +89,7 @@ func (clientTransport *ClientWebSocketTransport) Connect() error {
 	clientTransport.inputStreamCh = make(chan []byte)   // Message Queue
 	// Message handler for received messages
 	clientTransport.ListenForMessages() // spawns a new routine
+	go clientTransport.startPing()
 	return nil
 }
 
@@ -117,11 +120,44 @@ func (clientTransport *ClientWebSocketTransport) closeAndResetWebSocket() {
 	}
 	// close WebSocket
 	if clientTransport.ws != nil {
-		clientTransport.ws.WriteMessage(websocket.CloseMessage, []byte{})
+		//clientTransport.ws.WriteMessage(websocket.CloseMessage, []byte{})
+		glog.V(1).Infof("Begin to send close message.")
+		clientTransport.write(websocket.CloseMessage, []byte{})
 		clientTransport.ws.Close()
 		clientTransport.ws = nil
 	}
 	clientTransport.status = Closed
+}
+
+const (
+	pingPeriod = time.Second * 60
+	writeWait = time.Second * 10
+)
+
+func (ws *ClientWebSocketTransport)  write(mtype int, payload []byte) error {
+	ws.mux.Lock()
+	defer ws.mux.Unlock()
+	ws.ws.SetWriteDeadline(time.Now().Add(writeWait))
+	return ws.ws.WriteMessage(mtype, payload)
+}
+
+func (ws *ClientWebSocketTransport) startPing() {
+	ticker := time.NewTicker(pingPeriod)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <- ws.stopListenerCh:
+			return
+		case <- ticker.C:
+			glog.V(2).Infof("begin to send Ping message")
+			if err := ws.write(websocket.PingMessage, []byte{}); err != nil {
+				glog.Errorf("Failed to send PingMessage to server:%v", err)
+				return
+			}
+			glog.V(2).Infof("Sent ping message success")
+		}
+	}
 }
 
 // ================================================= Message Listener =============================================
@@ -130,6 +166,7 @@ func (clientTransport *ClientWebSocketTransport) stopListenForMessages() {
 		glog.V(4).Infof("[StopListenForMessages] closing stopListenerCh %+v", clientTransport.stopListenerCh)
 		clientTransport.stopListenerCh <- true
 		close(clientTransport.stopListenerCh)
+		clientTransport.stopListenerCh = nil
 		glog.V(4).Infof("[StopListenForMessages] closed stopListenerCh %+v", clientTransport.stopListenerCh)
 	}
 }
@@ -143,12 +180,12 @@ func (clientTransport *ClientWebSocketTransport) ListenForMessages() {
 
 	go func() {
 		for {
-			glog.V(4).Info("[ListenForMessages] waiting for messages on websocket transport")
+			glog.V(2).Info("[ListenForMessages] waiting for messages on websocket transport")
 			glog.V(4).Infof("[ListenForMessages] waiting for messages on websocket transport : %++v", clientTransport)
 			select {
 			case <-clientTransport.stopListenerCh:
 				close(clientTransport.inputStreamCh) // This listener routine is the writer for this channel
-				glog.V(4).Infof("[ListenForMessages] closed inputStreamCh %+v", clientTransport.inputStreamCh)
+				glog.V(2).Infof("[ListenForMessages] closed inputStreamCh %+v", clientTransport.inputStreamCh)
 				return
 			default:
 				if clientTransport.status != Ready {
@@ -169,14 +206,15 @@ func (clientTransport *ClientWebSocketTransport) ListenForMessages() {
 					}
 
 					glog.Errorf("[ListenForMessages] error during receive %v", err)
-					//notify error with the connection
-					clientTransport.connClosedNotificationCh <- true // Note: this will block till the message is received
 					// close current WebSocket connection.
 					clientTransport.closeAndResetWebSocket()
 					clientTransport.stopListenForMessages()
 
+					//notify error with the connection
+					clientTransport.connClosedNotificationCh <- true // Note: this will block till the message is received
+
 					glog.V(2).Infof("[ListenForMessages] error notified, will re-establish websocket connection")
-					break
+					return
 				}
 				// write the message on the channel
 				glog.V(3).Infof("[ListenForMessages] received message on websocket of size %d", len(data))
@@ -217,7 +255,8 @@ func (clientTransport *ClientWebSocketTransport) Send(messageToSend *TransportMe
 	}
 	du := time.Second * time.Duration(writeWaitSeconds)
 	clientTransport.ws.SetWriteDeadline(time.Now().Add(du))
-	err := clientTransport.ws.WriteMessage(websocket.BinaryMessage, messageToSend.RawMsg)
+	//err := clientTransport.ws.WriteMessage(websocket.BinaryMessage, messageToSend.RawMsg)
+	err := clientTransport.write(websocket.BinaryMessage, messageToSend.RawMsg)
 	if err != nil {
 		glog.Errorf("Error sending message on client transport: %s", err)
 		return fmt.Errorf("Error sending message on client transport: %s", err)
