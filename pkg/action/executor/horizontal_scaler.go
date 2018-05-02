@@ -66,7 +66,13 @@ func (h *HorizontalScaler) preActionCheck(action *proto.ActionItemDTO) error {
 
 	targetSE := action.GetTargetSE()
 	targetEntityType := targetSE.GetEntityType()
-	if targetEntityType != proto.EntityDTO_CONTAINER_POD && targetEntityType != proto.EntityDTO_APPLICATION {
+
+	filter := make(map[proto.EntityDTO_EntityType]struct{})
+	filter[proto.EntityDTO_CONTAINER_POD] = struct{}{}
+	filter[proto.EntityDTO_CONTAINER] = struct{}{}
+	filter[proto.EntityDTO_APPLICATION] = struct{}{}
+
+	if _, exist := filter[targetEntityType]; !exist{
 		msg := fmt.Sprintf("The target type[%v] for scaling action is neither a Pod nor an Application.", targetEntityType.String())
 		glog.Errorf(msg)
 		return fmt.Errorf("unsupported target type")

@@ -67,3 +67,17 @@ func (rClient *K8sRegistrationClient) GetAccountDefinition() []*proto.AccountDef
 func (rClient *K8sRegistrationClient) GetIdentifyingFields() string {
 	return TargetIdentifierField
 }
+
+func (rClient *K8sRegistrationClient) GetActionPolicy() []*proto.ActionPolicyDTO {
+	result := []*proto.ActionPolicyDTO{}
+
+	//1. VirtualApplication
+
+	//1. Application
+
+	//2. Container
+
+	//3. Pod
+
+	return result
+}

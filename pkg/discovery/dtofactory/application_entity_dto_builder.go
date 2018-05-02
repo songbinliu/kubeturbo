@@ -87,7 +87,7 @@ func (builder *applicationEntityDTOBuilder) BuildEntityDTOs(pods []*api.Pod) ([]
 			container := &(pod.Spec.Containers[i])
 			containerId := util.ContainerIdFunc(podId, i)
 			appId := util.ApplicationIdFunc(containerId)
-			displayName := util.ApplicationDisplayName(podFullName)
+			displayName := util.ApplicationDisplayName(podFullName, container.Name)
 
 			ebuilder := sdkbuilder.NewEntityDTOBuilder(proto.EntityDTO_APPLICATION, appId).
 				DisplayName(displayName)

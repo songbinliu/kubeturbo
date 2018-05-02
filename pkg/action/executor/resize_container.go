@@ -65,7 +65,7 @@ func (r *ContainerResizer) getNodeCPUFrequency(host string) (uint64, error) {
 	if err == nil {
 		return result, nil
 	}
-	glog.Warningf("Failed to get node node cpuFrequency by hostname: %v", err)
+	glog.Warningf("Failed to get node node cpuFrequency by hostname: %v, will try to get it by IP.", err)
 
 	node, err := util.GetNodebyName(r.kubeClient, host)
 	if err != nil {
@@ -88,6 +88,7 @@ func (r *ContainerResizer) setCPUQuantity(cpuMhz float64, host string, rlist k8s
 		glog.Errorf("failed to get node[%s] cpu frequency: %v", host, err)
 		return err
 	}
+	glog.V(2).Infof("Got node(%v) cpu frequency: %v", host, cpuFrequency)
 
 	cpuQuantity, err := genCPUQuantity(cpuMhz, cpuFrequency)
 	if err != nil {
